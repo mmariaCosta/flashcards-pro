@@ -148,6 +148,9 @@
             <div class="flashcard-hint" id="flashcardHint">
               <span>Clique em um deck no Dashboard</span>
             </div>
+            <button class="audio-btn" id="audioBtn" style="display: none;" onclick="event.stopPropagation(); app.speakText();">
+              🔊 Ouvir
+            </button>
             <input type="text" class="typing-input" id="typingInput" style="display: none;" placeholder="Digite sua resposta...">
           </div>
         </div>
@@ -160,7 +163,7 @@
               <div class="rating-time">1 min</div>
             </button>
             <button class="rating-btn hard" onclick="app.rateCard(2)">
-              <div>😔</div>
+              <div>😕</div>
               <div class="rating-label">Difícil</div>
               <div class="rating-time">10 min</div>
             </button>
