@@ -754,6 +754,7 @@ class FlashcardsApp {
     const hintEl = document.getElementById('flashcardHint');
     const typingInput = document.getElementById('typingInput');
     const ratingButtons = document.getElementById('ratingButtons');
+    const audioBtn = document.getElementById('audioBtn');
 
     if (this.studyMode === 'typing' && !this.isFlipped) {
       textEl.textContent = this.studyMode === 'reverse' ? card.back : card.front;
@@ -761,6 +762,7 @@ class FlashcardsApp {
       typingInput.style.display = 'block';
       typingInput.focus();
       ratingButtons.style.display = 'none';
+      audioBtn.style.display = 'none';
     } else {
       typingInput.style.display = 'none';
       
@@ -768,11 +770,90 @@ class FlashcardsApp {
         textEl.textContent = this.studyMode === 'reverse' ? card.front : card.back;
         hintEl.textContent = 'Resposta';
         ratingButtons.style.display = 'block';
+        // Mostrar botão de áudio apenas no verso (idioma estrangeiro)
+        audioBtn.style.display = 'flex';
       } else {
         textEl.textContent = this.studyMode === 'reverse' ? card.back : card.front;
         hintEl.textContent = 'Toque para ver a resposta';
         ratingButtons.style.display = 'none';
+        audioBtn.style.display = 'none';
       }
+    }
+  }
+
+  speakText() {
+    if (!this.currentDeck || !this.currentDeck.cards.length || !this.isFlipped) return;
+
+    const card = this.currentDeck.cards[this.currentCardIndex];
+    // No modo reverso, a frente é português, então falamos o verso
+    // No modo normal, o verso é o idioma estrangeiro
+    const textToSpeak = this.studyMode === 'reverse' ? card.front : card.back;
+
+    // Cancelar qualquer fala anterior
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    
+    // Tentar detectar idioma e configurar voz apropriada
+    this.configureVoice(utterance, textToSpeak);
+    
+    // Configurações de fala
+    utterance.rate = 0.9; // Velocidade um pouco mais lenta para facilitar compreensão
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
+    // Feedback visual
+    const audioBtn = document.getElementById('audioBtn');
+    audioBtn.classList.add('speaking');
+    
+utterance.onend = () => {
+      audioBtn.classList.remove('speaking');
+    };
+
+    utterance.onerror = () => {
+      audioBtn.classList.remove('speaking');
+      console.log('Erro ao reproduzir áudio');
+    };
+
+    window.speechSynthesis.speak(utterance);
+  }
+
+  configureVoice(utterance, text) {
+    const voices = window.speechSynthesis.getVoices();
+    
+    // Detectar idioma baseado em palavras comuns
+    const languagePatterns = {
+      'en': /\b(the|is|are|was|were|have|has|do|does|can|will|would|should|could|my|your|his|her)\b/i,
+      'es': /\b(el|la|los|las|es|son|fue|fueron|tiene|hacer|puede|mi|tu|su)\b/i,
+      'fr': /\b(le|la|les|est|sont|était|ont|faire|peut|mon|ton|son)\b/i,
+      'de': /\b(der|die|das|ist|sind|war|waren|hat|haben|kann|mein|dein|sein)\b/i,
+      'it': /\b(il|lo|la|è|sono|era|hanno|fare|può|mio|tuo|suo)\b/i
+    };
+
+    let detectedLang = 'en-US';
+
+    for (const [lang, pattern] of Object.entries(languagePatterns)) {
+      if (pattern.test(text)) {
+        detectedLang = lang;
+        break;
+      }
+    }
+
+    const langMap = {
+      'en': 'en-US',
+      'es': 'es-ES',
+      'fr': 'fr-FR',
+      'de': 'de-DE',
+      'it': 'it-IT',
+      'pt': 'pt-BR'
+    };
+
+    const targetLang = langMap[detectedLang] || detectedLang;
+    utterance.lang = targetLang;
+
+    const preferredVoice = voices.find(voice => voice.lang.startsWith(detectedLang));
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
     }
   }
 
