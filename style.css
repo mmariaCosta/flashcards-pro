@@ -3,6 +3,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 :root {
@@ -18,6 +19,7 @@
   --success: #28a745;
   --warning: #ffc107;
   --danger: #dc3545;
+  --sidebar-width: 280px;
 }
 
 /* ===== LAYOUT PRINCIPAL ===== */
@@ -27,11 +29,84 @@ body {
   color: var(--text-primary);
   min-height: 100vh;
   display: flex;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ===== BOTÃO HAMBURGUER ===== */
+.menu-toggle {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1001;
+  width: 50px;
+  height: 50px;
+  background: var(--accent);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.menu-toggle:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.menu-toggle:active {
+  transform: scale(0.95);
+}
+
+.menu-toggle span {
+  display: block;
+  width: 24px;
+  height: 3px;
+  background: white;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.menu-toggle.active span:nth-child(1) {
+  transform: rotate(45deg) translate(7px, 7px);
+}
+
+.menu-toggle.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.menu-toggle.active span:nth-child(3) {
+  transform: rotate(-45deg) translate(7px, -7px);
+}
+
+/* ===== OVERLAY ===== */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 99;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.overlay.active {
+  opacity: 1;
+  visibility: visible;
 }
 
 /* ===== SIDEBAR ===== */
 .sidebar {
-  width: 280px;
+  width: var(--sidebar-width);
   background: var(--bg-secondary);
   border-right: 2px solid var(--border);
   display: flex;
@@ -41,6 +116,12 @@ body {
   left: 0;
   top: 0;
   z-index: 100;
+  transition: transform 0.3s ease;
+  overflow-y: auto;
+}
+
+.sidebar.closed {
+  transform: translateX(-100%);
 }
 
 .logo {
@@ -99,6 +180,10 @@ body {
   color: var(--text-primary);
 }
 
+.nav-btn:active {
+  transform: scale(0.98);
+}
+
 .nav-btn.active {
   background: var(--accent);
   color: white;
@@ -108,9 +193,15 @@ body {
 /* ===== CONTEÚDO PRINCIPAL ===== */
 .main-content {
   flex: 1;
-  margin-left: 280px;
-  padding: 2rem;
+  margin-left: var(--sidebar-width);
+  padding: 5rem 2rem 2rem 2rem;
   overflow-y: auto;
+  transition: margin-left 0.3s ease;
+  width: 100%;
+}
+
+.main-content.expanded {
+  margin-left: 0;
 }
 
 .view {
@@ -173,6 +264,10 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+.stat-card:active {
+  transform: scale(0.98);
+}
+
 .stat-header {
   display: flex;
   justify-content: space-between;
@@ -204,7 +299,7 @@ body {
 /* ===== CARDS ===== */
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.5rem;
 }
 
@@ -221,6 +316,10 @@ body {
   transform: translateY(-4px);
   border-color: var(--accent);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.card:active {
+  transform: translateY(-2px);
 }
 
 .card-title {
@@ -242,6 +341,7 @@ body {
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 2px solid var(--border);
+  flex-wrap: wrap;
 }
 
 .card-stat {
@@ -263,8 +363,14 @@ body {
   transition: all 0.2s;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   font-size: 0.95rem;
+  touch-action: manipulation;
+}
+
+.btn:active {
+  transform: scale(0.95);
 }
 
 .btn-primary {
@@ -274,7 +380,6 @@ body {
 
 .btn-primary:hover {
   background: var(--accent-light);
-  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
@@ -342,13 +447,13 @@ body {
 }
 
 .mode-selector {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
 }
 
 .mode-card {
-  flex: 1;
   background: var(--bg-secondary);
   border: 2px solid var(--border);
   border-radius: 12px;
@@ -360,6 +465,10 @@ body {
 
 .mode-card:hover {
   border-color: var(--accent);
+}
+
+.mode-card:active {
+  transform: scale(0.95);
 }
 
 .mode-card.active {
@@ -384,18 +493,23 @@ body {
   background: var(--bg-secondary);
   border: 3px solid var(--accent);
   border-radius: 16px;
-  padding: 4rem 3rem;
-  min-height: 400px;
+  padding: 3rem 2rem;
+  min-height: 350px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s;
   margin-bottom: 2rem;
+  touch-action: manipulation;
 }
 
 .flashcard-container:hover {
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.flashcard-container:active {
+  transform: scale(0.98);
 }
 
 .flashcard-content {
@@ -404,7 +518,7 @@ body {
 }
 
 .flashcard-text {
-  font-size: 2rem;
+  font-size: 1.8rem;
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 1.5rem;
@@ -414,6 +528,7 @@ body {
   align-items: center;
   justify-content: center;
   word-break: break-word;
+  padding: 0 1rem;
 }
 
 .flashcard-hint {
@@ -425,7 +540,7 @@ body {
 .typing-input {
   width: 100%;
   padding: 1rem;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   border: 2px solid var(--border);
   border-radius: 8px;
   text-align: center;
@@ -439,16 +554,14 @@ body {
 
 /* ===== AVALIAÇÃO ===== */
 .rating-buttons {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 1rem;
-  justify-content: center;
   margin-top: 2rem;
 }
 
 .rating-btn {
-  flex: 1;
-  max-width: 150px;
-  padding: 1.25rem;
+  padding: 1rem;
   border: 2px solid var(--border);
   border-radius: 12px;
   background: var(--bg-secondary);
@@ -457,11 +570,29 @@ body {
   transition: all 0.2s;
   font-weight: 700;
   font-size: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  touch-action: manipulation;
 }
 
 .rating-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.rating-btn:active {
+  transform: translateY(0);
+}
+
+.rating-label {
+  font-size: 0.875rem;
+}
+
+.rating-time {
+  font-size: 0.75rem;
+  opacity: 0.7;
 }
 
 .rating-btn.again {
@@ -537,12 +668,17 @@ body {
   justify-content: center;
   font-size: 1.5rem;
   font-weight: 700;
+  touch-action: manipulation;
 }
 
 .ctrl-btn:hover:not(:disabled) {
   background: var(--accent);
   color: white;
   transform: scale(1.05);
+}
+
+.ctrl-btn:active:not(:disabled) {
+  transform: scale(0.95);
 }
 
 .ctrl-btn:disabled {
@@ -571,24 +707,51 @@ body {
   opacity: 0.5;
 }
 
-/* ===== RESPONSIVO ===== */
-@media (max-width: 768px) {
+/* ===== RESPONSIVO - TABLET ===== */
+@media (max-width: 1024px) {
   .sidebar {
-    width: 100%;
-    height: auto;
-    position: relative;
-    border-right: none;
-    border-bottom: 2px solid var(--border);
+    transform: translateX(-100%);
   }
-
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  
   .main-content {
     margin-left: 0;
-    padding: 1rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ===== RESPONSIVO - MOBILE ===== */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 4.5rem 1rem 1rem 1rem;
   }
 
-  .stats-grid,
+  .page-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .stat-value {
+    font-size: 2rem;
+  }
+
   .cards-grid {
     grid-template-columns: 1fr;
+  }
+
+  .flashcard-container {
+    padding: 2rem 1.5rem;
+    min-height: 300px;
   }
 
   .flashcard-text {
@@ -596,14 +759,58 @@ body {
   }
 
   .mode-selector {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 
   .rating-buttons {
-    flex-wrap: wrap;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .ctrl-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 1.2rem;
+  }
+
+  .ctrl-btn-main {
+    width: 65px;
+    height: 65px;
+    font-size: 1.5rem;
+  }
+
+  .form-container {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .menu-toggle {
+    width: 45px;
+    height: 45px;
+    top: 0.75rem;
+    left: 0.75rem;
+  }
+
+  .flashcard-text {
+    font-size: 1.25rem;
   }
 
   .rating-btn {
-    max-width: calc(50% - 0.5rem);
+    padding: 0.75rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* ===== TOUCH OPTIMIZATIONS ===== */
+@media (hover: none) and (pointer: coarse) {
+  .btn,
+  .nav-btn,
+  .card,
+  .ctrl-btn,
+  .rating-btn,
+  .mode-card {
+    min-height: 44px;
+    min-width: 44px;
   }
 }
