@@ -12,10 +12,8 @@
 </head>
 <body>
 
-  <!-- Overlay para fechar menu no mobile -->
   <div class="overlay" id="overlay"></div>
 
-  <!-- Botão hamburguer -->
   <button class="menu-toggle" id="menuToggle">
     <span></span>
     <span></span>
@@ -162,7 +160,7 @@
               <div class="rating-time">1 min</div>
             </button>
             <button class="rating-btn hard" onclick="app.rateCard(2)">
-              <div>😓</div>
+              <div>😔</div>
               <div class="rating-label">Difícil</div>
               <div class="rating-time">10 min</div>
             </button>
@@ -180,9 +178,9 @@
         </div>
 
         <div class="study-controls">
-          <button class="ctrl-btn" onclick="app.previousCard()" id="btnPrev">⏮</button>
+          <button class="ctrl-btn" onclick="app.previousCard()" id="btnPrev">◀</button>
           <button class="ctrl-btn-main" onclick="app.flipCard()" id="btnFlip">🔄</button>
-          <button class="ctrl-btn" onclick="app.nextCard()" id="btnNext">⏭</button>
+          <button class="ctrl-btn" onclick="app.nextCard()" id="btnNext">▶</button>
         </div>
       </div>
     </section>
@@ -287,6 +285,44 @@
         <div style="margin-top: 2rem;">
           <button class="btn btn-primary" onclick="app.saveSettings()">
             💾 Salvar Configurações
+          </button>
+        </div>
+
+        <!-- SEÇÃO DE NOTIFICAÇÕES -->
+        <div style="margin-top: 3rem; padding-top: 2rem; border-top: 2px solid var(--border);">
+          <h3 style="margin-bottom: 1rem;">🔔 Notificações</h3>
+          <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">
+            Receba lembretes para estudar seus flashcards
+          </p>
+
+          <div class="form-group">
+            <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem;">
+              <input type="checkbox" id="notificationToggle" style="width: auto;">
+              <span>Ativar Notificações</span>
+            </label>
+            <p id="notificationStatus" style="margin-top: 0.5rem; font-size: 0.875rem;"></p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Horários de Lembrete</label>
+            <div style="display: grid; gap: 1rem;">
+              <div style="display: flex; align-items: center; gap: 1rem;">
+                <span style="min-width: 100px;">Manhã:</span>
+                <input type="time" class="form-input notification-time-input" value="09:00">
+              </div>
+              <div style="display: flex; align-items: center; gap: 1rem;">
+                <span style="min-width: 100px;">Tarde:</span>
+                <input type="time" class="form-input notification-time-input" value="14:00">
+              </div>
+              <div style="display: flex; align-items: center; gap: 1rem;">
+                <span style="min-width: 100px;">Noite:</span>
+                <input type="time" class="form-input notification-time-input" value="19:00">
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-secondary" id="testNotification" style="margin-top: 1rem;">
+            🧪 Testar Notificação
           </button>
         </div>
 
