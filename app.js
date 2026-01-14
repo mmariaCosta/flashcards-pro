@@ -12,13 +12,16 @@ class FlashcardsApp {
     };
     this.settings = {
       newCardsPerDay: 20,
-      reviewsPerDay: 100
+      reviewsPerDay: 100,
+      notificationsEnabled: false,
+      notificationTimes: ['09:00', '14:00', '19:00']
     };
     this.currentDeck = null;
     this.currentCardIndex = 0;
     this.isFlipped = false;
     this.studyMode = 'normal';
     this.deferredPrompt = null;
+    this.notificationCheckInterval = null;
     
     this.init();
   }
@@ -32,9 +35,209 @@ class FlashcardsApp {
     this.setupModeSelector();
     this.setupTypingMode();
     this.setupPWA();
+    this.setupNotifications();
     this.render();
     this.updateStreak();
-    console.log('✅ Flashcards Pro inicializado');
+    console.log('✅ Flashcards Pro inicializado com notificações');
+  }
+
+  // ===== SETUP DE NOTIFICAÇÕES =====
+  async setupNotifications() {
+    const notifToggle = document.getElementById('notificationToggle');
+    const notifStatus = document.getElementById('notificationStatus');
+    const timeInputs = document.querySelectorAll('.notification-time-input');
+
+    // Verificar suporte a notificações
+    if (!('Notification' in window)) {
+      notifStatus.textContent = '❌ Seu navegador não suporta notificações';
+      notifToggle.disabled = true;
+      return;
+    }
+
+    // Carregar estado atual
+    notifToggle.checked = this.settings.notificationsEnabled;
+    this.updateNotificationStatus();
+
+    // Carregar horários salvos
+    timeInputs.forEach((input, index) => {
+      if (this.settings.notificationTimes[index]) {
+        input.value = this.settings.notificationTimes[index];
+      }
+    });
+
+    // Toggle de notificações
+    notifToggle.addEventListener('change', async () => {
+      if (notifToggle.checked) {
+        await this.enableNotifications();
+      } else {
+        this.disableNotifications();
+      }
+    });
+
+    // Salvar horários quando alterados
+    timeInputs.forEach((input, index) => {
+      input.addEventListener('change', () => {
+        this.settings.notificationTimes[index] = input.value;
+        this.saveData();
+        if (this.settings.notificationsEnabled) {
+          this.scheduleNotifications();
+        }
+      });
+    });
+
+    // Adicionar botão de teste
+    const testBtn = document.getElementById('testNotification');
+    if (testBtn) {
+      testBtn.addEventListener('click', () => this.sendTestNotification());
+    }
+
+    // Iniciar verificação se notificações estiverem ativas
+    if (this.settings.notificationsEnabled && Notification.permission === 'granted') {
+      this.scheduleNotifications();
+    }
+  }
+
+  async enableNotifications() {
+    try {
+      const permission = await Notification.requestPermission();
+      
+      if (permission === 'granted') {
+        this.settings.notificationsEnabled = true;
+        this.saveData();
+        this.updateNotificationStatus();
+        this.scheduleNotifications();
+        
+        // Enviar notificação de confirmação
+        new Notification('🎉 Notificações Ativadas!', {
+          body: 'Você receberá lembretes para estudar seus flashcards',
+          icon: '/icon-192x192.png',
+          badge: '/icon-192x192.png',
+          tag: 'welcome'
+        });
+        
+        alert('✅ Notificações ativadas com sucesso!\n\nVocê receberá lembretes nos horários configurados.');
+      } else {
+        document.getElementById('notificationToggle').checked = false;
+        alert('❌ Você precisa permitir notificações para usar este recurso.');
+      }
+    } catch (error) {
+      console.error('Erro ao ativar notificações:', error);
+      document.getElementById('notificationToggle').checked = false;
+      alert('❌ Erro ao ativar notificações. Tente novamente.');
+    }
+  }
+
+  disableNotifications() {
+    this.settings.notificationsEnabled = false;
+    this.saveData();
+    this.updateNotificationStatus();
+    
+    if (this.notificationCheckInterval) {
+      clearInterval(this.notificationCheckInterval);
+      this.notificationCheckInterval = null;
+    }
+    
+    alert('🔕 Notificações desativadas.');
+  }
+
+  updateNotificationStatus() {
+    const status = document.getElementById('notificationStatus');
+    
+    if (!('Notification' in window)) {
+      status.textContent = '❌ Navegador não suporta notificações';
+      status.style.color = 'var(--danger)';
+    } else if (Notification.permission === 'denied') {
+      status.textContent = '🚫 Notificações bloqueadas. Altere nas configurações do navegador.';
+      status.style.color = 'var(--danger)';
+    } else if (this.settings.notificationsEnabled && Notification.permission === 'granted') {
+      status.textContent = '✅ Notificações ativas';
+      status.style.color = 'var(--success)';
+    } else {
+      status.textContent = '⏸️ Notificações desativadas';
+      status.style.color = 'var(--text-muted)';
+    }
+  }
+
+  scheduleNotifications() {
+    // Limpar intervalo anterior se existir
+    if (this.notificationCheckInterval) {
+      clearInterval(this.notificationCheckInterval);
+    }
+
+    // Verificar a cada minuto se é hora de enviar notificação
+    this.notificationCheckInterval = setInterval(() => {
+      this.checkAndSendNotification();
+    }, 60000); // 1 minuto
+
+    // Verificar imediatamente também
+    this.checkAndSendNotification();
+  }
+
+  checkAndSendNotification() {
+    if (!this.settings.notificationsEnabled || Notification.permission !== 'granted') {
+      return;
+    }
+
+    const now = new Date();
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    
+    // Verificar se o horário atual corresponde a algum horário configurado
+    if (this.settings.notificationTimes.includes(currentTime)) {
+      // Verificar se já enviou notificação neste minuto (evitar duplicatas)
+      const lastNotifKey = 'lastNotificationTime';
+      const lastNotif = localStorage.getItem(lastNotifKey);
+      const currentMinute = now.toISOString().substring(0, 16); // YYYY-MM-DDTHH:MM
+      
+      if (lastNotif !== currentMinute) {
+        this.sendStudyReminder();
+        localStorage.setItem(lastNotifKey, currentMinute);
+      }
+    }
+  }
+
+  sendStudyReminder() {
+    // Contar cartões pendentes
+    let totalDue = 0;
+    this.decks.forEach(deck => {
+      totalDue += deck.cards.filter(card => this.isCardDue(card)).length;
+    });
+
+    if (totalDue === 0) {
+      // Enviar notificação de parabéns
+      new Notification('🎉 Parabéns!', {
+        body: 'Você está em dia com seus estudos!',
+        icon: '/icon-192x192.png',
+        badge: '/icon-192x192.png',
+        tag: 'study-reminder'
+      });
+    } else {
+      // Enviar lembrete de estudo
+      new Notification('📚 Hora de Estudar!', {
+        body: `Você tem ${totalDue} cartão${totalDue > 1 ? 'es' : ''} para revisar`,
+        icon: '/icon-192x192.png',
+        badge: '/icon-192x192.png',
+        tag: 'study-reminder',
+        requireInteraction: true
+      });
+    }
+  }
+
+  sendTestNotification() {
+    if (Notification.permission !== 'granted') {
+      alert('⚠️ Você precisa permitir notificações primeiro!');
+      return;
+    }
+
+    const totalDue = this.decks.reduce((sum, deck) => {
+      return sum + deck.cards.filter(card => this.isCardDue(card)).length;
+    }, 0);
+
+    new Notification('🧪 Notificação de Teste', {
+      body: `Funcionando perfeitamente! Você tem ${totalDue} cartões pendentes.`,
+      icon: '/icon-192x192.png',
+      badge: '/icon-192x192.png',
+      tag: 'test'
+    });
   }
 
   // ===== SETUP DO MENU LATERAL =====
@@ -45,7 +248,6 @@ class FlashcardsApp {
     const mainContent = document.querySelector('.main-content');
     const navButtons = document.querySelectorAll('.nav-btn');
 
-    // Verificar tamanho da tela
     const checkScreenSize = () => {
       if (window.innerWidth > 1024) {
         sidebar.classList.remove('closed');
@@ -59,13 +261,9 @@ class FlashcardsApp {
       }
     };
 
-    // Executar no carregamento
     checkScreenSize();
-
-    // Executar ao redimensionar
     window.addEventListener('resize', checkScreenSize);
 
-    // Toggle menu
     menuToggle.addEventListener('click', () => {
       const isOpen = sidebar.classList.contains('open');
       
@@ -82,7 +280,6 @@ class FlashcardsApp {
       }
     });
 
-    // Fechar menu ao clicar no overlay
     overlay.addEventListener('click', () => {
       sidebar.classList.remove('open');
       sidebar.classList.add('closed');
@@ -90,7 +287,6 @@ class FlashcardsApp {
       menuToggle.classList.remove('active');
     });
 
-    // Fechar menu ao selecionar item (apenas em mobile/tablet)
     navButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         if (window.innerWidth <= 1024) {
@@ -108,13 +304,11 @@ class FlashcardsApp {
     const installBtn = document.getElementById('installBtn');
     const installMessage = document.getElementById('installMessage');
 
-    // Verificar se já está instalado
     if (window.matchMedia('(display-mode: standalone)').matches) {
       installMessage.textContent = '✅ Aplicativo já instalado';
       return;
     }
 
-    // Capturar evento de instalação
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       this.deferredPrompt = e;
@@ -122,7 +316,6 @@ class FlashcardsApp {
       installMessage.textContent = 'Clique no botão para instalar';
     });
 
-    // Botão de instalação
     installBtn.addEventListener('click', async () => {
       if (!this.deferredPrompt) {
         return;
@@ -141,20 +334,17 @@ class FlashcardsApp {
       installBtn.style.display = 'none';
     });
 
-    // Evento após instalação
     window.addEventListener('appinstalled', () => {
       installMessage.textContent = '✅ Aplicativo instalado com sucesso!';
       this.deferredPrompt = null;
     });
 
-    // Se não houver suporte
     if (!('serviceWorker' in navigator)) {
       installMessage.textContent = 'Seu navegador não suporta instalação';
     } else {
       installMessage.textContent = 'Aguardando prompt de instalação...';
     }
 
-    // Registrar Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/service-worker.js')
@@ -173,7 +363,7 @@ class FlashcardsApp {
         this.decks = data.decks || [];
         this.folders = data.folders || [];
         this.stats = data.stats || this.stats;
-        this.settings = data.settings || this.settings;
+        this.settings = { ...this.settings, ...(data.settings || {}) };
         
         document.getElementById('settingNewCards').value = this.settings.newCardsPerDay;
         document.getElementById('settingReviews').value = this.settings.reviewsPerDay;
@@ -836,7 +1026,9 @@ class FlashcardsApp {
     };
     this.settings = {
       newCardsPerDay: 20,
-      reviewsPerDay: 100
+      reviewsPerDay: 100,
+      notificationsEnabled: false,
+      notificationTimes: ['09:00', '14:00', '19:00']
     };
 
     this.saveData();
