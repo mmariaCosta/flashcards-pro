@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flashcards Pro - Sistema de Aprendizagem</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="logo">
+      <h1>📚 Flashcards Pro</h1>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section">
+        <div class="nav-section-title">Menu</div>
+        <button class="nav-btn active" data-view="dashboard">
+          <span>📊</span>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-btn" data-view="study">
+          <span>📖</span>
+          <span>Estudar</span>
+        </button>
+        <button class="nav-btn" data-view="decks">
+          <span>🎴</span>
+          <span>Meus Decks</span>
+        </button>
+        <button class="nav-btn" data-view="folders">
+          <span>📁</span>
+          <span>Pastas</span>
+        </button>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Criar</div>
+        <button class="nav-btn" data-view="create">
+          <span>➕</span>
+          <span>Novo Deck</span>
+        </button>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Configurações</div>
+        <button class="nav-btn" data-view="settings">
+          <span>⚙️</span>
+          <span>Configurações</span>
+        </button>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="view active">
+      <div class="page-header">
+        <h2>Dashboard</h2>
+        <p>Acompanhe seu progresso de aprendizado</p>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-title">Hoje</div>
+          </div>
+          <div class="stat-value" id="statToday">0</div>
+          <div class="stat-change">cartões estudados</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-title">Acertos</div>
+          </div>
+          <div class="stat-value" id="statAccuracy">0%</div>
+          <div class="stat-change">taxa de sucesso</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-title">Sequência</div>
+          </div>
+          <div class="stat-value" id="statStreak">0</div>
+          <div class="stat-change">dias consecutivos</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-title">Decks</div>
+          </div>
+          <div class="stat-value" id="statDecks">0</div>
+          <div class="stat-change" id="statCards">0 cartões</div>
+        </div>
+      </div>
+
+      <div class="page-header" style="margin-top: 2rem;">
+        <h2>Revisões Pendentes</h2>
+        <p>Cartões que precisam ser revisados hoje</p>
+      </div>
+
+      <div id="reviewCards" class="cards-grid"></div>
+    </section>
+
+    <!-- STUDY -->
+    <section id="studyView" class="view">
+      <div class="flashcard-study">
+        <div class="page-header">
+          <h2 id="studyDeckName">Selecione um Deck</h2>
+          <p id="studyProgress">Pronto para começar</p>
+        </div>
+
+        <div class="mode-selector" id="modeSelector">
+          <div class="mode-card active" data-mode="normal">
+            <div class="mode-title">Normal</div>
+            <div class="mode-desc">Vire o cartão</div>
+          </div>
+          <div class="mode-card" data-mode="reverse">
+            <div class="mode-title">Reverso</div>
+            <div class="mode-desc">Verso primeiro</div>
+          </div>
+          <div class="mode-card" data-mode="typing">
+            <div class="mode-title">Digitação</div>
+            <div class="mode-desc">Escreva a resposta</div>
+          </div>
+        </div>
+
+        <div class="progress-bar">
+          <div class="progress-fill" id="studyProgressBar"></div>
+        </div>
+
+        <div class="flashcard-container" id="flashcardContainer">
+          <div class="flashcard-content">
+            <div class="flashcard-text" id="flashcardText">Selecione um deck para começar</div>
+            <div class="flashcard-hint" id="flashcardHint">
+              <span>Clique em um deck no Dashboard</span>
+            </div>
+            <input type="text" class="typing-input" id="typingInput" style="display: none;" placeholder="Digite sua resposta...">
+          </div>
+        </div>
+
+        <div id="ratingButtons" style="display: none;">
+          <div class="rating-buttons">
+            <button class="rating-btn again" onclick="app.rateCard(1)">
+              <div>❌ Errei</div>
+              <div style="font-size: 0.75rem; margin-top: 0.5rem; opacity: 0.7;">1 min</div>
+            </button>
+            <button class="rating-btn hard" onclick="app.rateCard(2)">
+              <div>😓 Difícil</div>
+              <div style="font-size: 0.75rem; margin-top: 0.5rem; opacity: 0.7;">10 min</div>
+            </button>
+            <button class="rating-btn good" onclick="app.rateCard(3)">
+              <div>✅ Bom</div>
+              <div style="font-size: 0.75rem; margin-top: 0.5rem; opacity: 0.7;">1 dia</div>
+            </button>
+            <button class="rating-btn easy" onclick="app.rateCard(4)">
+              <div>🎯 Fácil</div>
+              <div style="font-size: 0.75rem; margin-top: 0.5rem; opacity: 0.7;">4 dias</div>
+            </button>
+          </div>
+        </div>
+
+        <div class="study-controls">
+          <button class="ctrl-btn" onclick="app.previousCard()" id="btnPrev">⏮</button>
+          <button class="ctrl-btn-main" onclick="app.flipCard()" id="btnFlip">🔄</button>
+          <button class="ctrl-btn" onclick="app.nextCard()" id="btnNext">⏭</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- DECKS -->
+    <section id="decks" class="view">
+      <div class="page-header">
+        <h2>Meus Decks</h2>
+        <p>Organize e gerencie seus decks de estudo</p>
+      </div>
+
+      <div id="decksList" class="cards-grid"></div>
+
+      <div id="emptyDecks" class="empty-state" style="display: none;">
+        <div class="empty-icon">🎴</div>
+        <h3>Nenhum deck criado</h3>
+        <p style="margin: 1rem 0;">Comece criando seu primeiro deck de estudos</p>
+        <button class="btn btn-primary" onclick="app.showView('create')">
+          ➕ Criar Primeiro Deck
+        </button>
+      </div>
+    </section>
+
+    <!-- CREATE -->
+    <section id="create" class="view">
+      <div class="page-header">
+        <h2>Criar Novo Deck</h2>
+        <p>Adicione cartões para começar seus estudos</p>
+      </div>
+
+      <div class="form-container">
+        <div class="form-group">
+          <label class="form-label">Nome do Deck *</label>
+          <input type="text" class="form-input" id="deckName" placeholder="Ex: Vocabulário Inglês - Básico">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Descrição</label>
+          <input type="text" class="form-input" id="deckDesc" placeholder="Ex: Palavras essenciais do dia a dia">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Pasta</label>
+          <select class="form-select" id="deckFolder">
+            <option value="">Sem pasta</option>
+            <option value="__new__">➕ Criar nova pasta</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="newFolderGroup" style="display: none;">
+          <label class="form-label">Nome da Nova Pasta</label>
+          <input type="text" class="form-input" id="newFolderName" placeholder="Ex: Inglês">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Cartões (frente e verso em linhas alternadas) *</label>
+          <textarea class="form-textarea" id="deckCards" rows="12" placeholder="Hello&#10;Olá&#10;Goodbye&#10;Adeus&#10;Thank you&#10;Obrigado"></textarea>
+          <small style="color: var(--text-muted); margin-top: 0.5rem; display: block;">
+            💡 Digite alternando: Linha 1 = frente, Linha 2 = verso, Linha 3 = frente, e assim por diante
+          </small>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+          <button class="btn btn-primary" onclick="app.saveDeck()">
+            💾 Salvar Deck
+          </button>
+          <button class="btn btn-secondary" onclick="app.showView('decks')">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOLDERS -->
+    <section id="folders" class="view">
+      <div class="page-header">
+        <h2>Pastas</h2>
+        <p>Organize seus decks por categorias</p>
+      </div>
+
+      <div id="foldersList" class="cards-grid"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="settings" class="view">
+      <div class="page-header">
+        <h2>Configurações</h2>
+        <p>Personalize sua experiência de estudo</p>
+      </div>
+
+      <div class="form-container">
+        <div class="form-group">
+          <label class="form-label">Cartões Novos por Dia</label>
+          <input type="number" class="form-input" id="settingNewCards" value="20" min="1" max="100">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Revisões por Dia</label>
+          <input type="number" class="form-input" id="settingReviews" value="100" min="1" max="500">
+        </div>
+
+        <div style="margin-top: 2rem;">
+          <button class="btn btn-primary" onclick="app.saveSettings()">
+            💾 Salvar Configurações
+          </button>
+        </div>
+
+        <div style="margin-top: 3rem; padding-top: 2rem; border-top: 2px solid var(--border);">
+          <h3 style="margin-bottom: 1rem;">Gerenciar Dados</h3>
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <button class="btn btn-secondary" onclick="app.exportData()">
+              📤 Exportar Dados
+            </button>
+            <button class="btn btn-secondary" onclick="app.importData()">
+              📥 Importar Dados
+            </button>
+            <button class="btn btn-secondary" onclick="app.resetData()">
+              🗑️ Resetar Tudo
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+
+</body>
+</html>

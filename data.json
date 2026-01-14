@@ -1,0 +1,23 @@
+{
+  "name": "Flashcards Musicais",
+  "short_name": "Flashcards",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f0ff",
+  "theme_color": "#9f7aea",
+  "icons": [
+    {
+      "src": "assets/icons/icone.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ],
+  "data": {
+    "flashcards": [],
+    "folders": [],
+    "ultimaAtualizacao": "2026-01-10T00:00:00.000Z",
+    "versao": "1.0",
+    "totalFlashcards": 0,
+    "totalPastas": 0
+  }
+}
