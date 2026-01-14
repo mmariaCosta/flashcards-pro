@@ -2,13 +2,27 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Flashcards Pro - Sistema de Aprendizagem</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#000000">
+  <title>Flashcards Pro</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
 </head>
 <body>
 
-  <aside class="sidebar">
+  <!-- Overlay para fechar menu no mobile -->
+  <div class="overlay" id="overlay"></div>
+
+  <!-- Botão hamburguer -->
+  <button class="menu-toggle" id="menuToggle">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+
+  <aside class="sidebar" id="sidebar">
     <div class="logo">
       <h1>📚 Flashcards Pro</h1>
     </div>
@@ -143,20 +157,24 @@
         <div id="ratingButtons" style="display: none;">
           <div class="rating-buttons">
             <button class="rating-btn again" onclick="app.rateCard(1)">
-              <div>❌ Errei</div>
-              <div style="font-size: 0.75rem; margin-top: 0.5rem; opacity: 0.7;">1 min</div>
+              <div>❌</div>
+              <div class="rating-label">Errei</div>
+              <div class="rating-time">1 min</div>
             </button>
             <button class="rating-btn hard" onclick="app.rateCard(2)">
-              <div>😓 Difícil</div>
-              <div style="font-size: 0.75rem; margin-top: 0.5rem; opacity: 0.7;">10 min</div>
+              <div>😓</div>
+              <div class="rating-label">Difícil</div>
+              <div class="rating-time">10 min</div>
             </button>
             <button class="rating-btn good" onclick="app.rateCard(3)">
-              <div>✅ Bom</div>
-              <div style="font-size: 0.75rem; margin-top: 0.5rem; opacity: 0.7;">1 dia</div>
+              <div>✅</div>
+              <div class="rating-label">Bom</div>
+              <div class="rating-time">1 dia</div>
             </button>
             <button class="rating-btn easy" onclick="app.rateCard(4)">
-              <div>🎯 Fácil</div>
-              <div style="font-size: 0.75rem; margin-top: 0.5rem; opacity: 0.7;">4 dias</div>
+              <div>🎯</div>
+              <div class="rating-label">Fácil</div>
+              <div class="rating-time">4 dias</div>
             </button>
           </div>
         </div>
@@ -227,7 +245,7 @@
           </small>
         </div>
 
-        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+        <div style="display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap;">
           <button class="btn btn-primary" onclick="app.saveDeck()">
             💾 Salvar Deck
           </button>
@@ -276,22 +294,33 @@
           <h3 style="margin-bottom: 1rem;">Gerenciar Dados</h3>
           <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
             <button class="btn btn-secondary" onclick="app.exportData()">
-              📤 Exportar Dados
+              📤 Exportar
             </button>
             <button class="btn btn-secondary" onclick="app.importData()">
-              📥 Importar Dados
+              📥 Importar
             </button>
             <button class="btn btn-secondary" onclick="app.resetData()">
-              🗑️ Resetar Tudo
+              🗑️ Resetar
             </button>
           </div>
+        </div>
+
+        <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid var(--border);">
+          <h3 style="margin-bottom: 1rem;">Instalar Aplicativo</h3>
+          <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+            Instale o Flashcards Pro como um aplicativo no seu dispositivo
+          </p>
+          <button class="btn btn-primary" id="installBtn" style="display: none;">
+            📲 Instalar Aplicativo
+          </button>
+          <p id="installMessage" style="color: var(--text-muted); font-size: 0.875rem;"></p>
         </div>
       </div>
     </section>
 
   </main>
 
-  <script src="app.js"></script>
+  <script src="script.js"></script>
 
 </body>
 </html>
