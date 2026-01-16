@@ -2,364 +2,621 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#000000">
-  <title>Flashcards Pro</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="manifest" href="manifest.json">
+  <title>Cadastro - Flashcards Pro</title>
+  <link rel="stylesheet" href="css/onboarding.css">
 </head>
 <body>
-
-  <div class="overlay" id="overlay"></div>
-
-  <button class="menu-toggle" id="menuToggle">
-    <span></span>
-    <span></span>
-    <span></span>
-  </button>
-
-  <aside class="sidebar" id="sidebar">
-    <div class="logo">
-      <h1>📚 Flashcards Pro</h1>
+  
+  <div class="onboarding-container">
+    
+    <!-- Progress Bar -->
+    <div class="progress-header">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressBar"></div>
+      </div>
+      <button class="btn-back" id="btnBack" style="display: none;">← Voltar</button>
     </div>
 
-    <nav class="nav">
-      <div class="nav-section">
-        <div class="nav-section-title">Menu</div>
-        <button class="nav-btn active" data-view="dashboard">
-          <span>📊</span>
-          <span>Dashboard</span>
-        </button>
-        <button class="nav-btn" data-view="study">
-          <span>📖</span>
-          <span>Estudar</span>
-        </button>
-        <button class="nav-btn" data-view="decks">
-          <span>🎴</span>
-          <span>Meus Decks</span>
-        </button>
-        <button class="nav-btn" data-view="folders">
-          <span>📁</span>
-          <span>Pastas</span>
-        </button>
+    <!-- STEP 1: Email e Senha -->
+    <div class="step active" data-step="1">
+      <div class="step-content">
+        <h1>Crie sua conta</h1>
+        <p>Comece sua jornada de aprendizado</p>
+
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="email" required placeholder="seu@email.com">
+        </div>
+
+        <div class="form-group">
+          <label>Senha</label>
+          <input type="password" id="password" required placeholder="Mínimo 6 caracteres">
+        </div>
+
+        <button class="btn-primary" onclick="nextStep()">Continuar</button>
+        
+        <p class="step-footer">
+          Já tem conta? <a href="login.html">Fazer login</a>
+        </p>
       </div>
+    </div>
 
-      <div class="nav-section">
-        <div class="nav-section-title">Criar</div>
-        <button class="nav-btn" data-view="create">
-          <span>➕</span>
-          <span>Novo Deck</span>
-        </button>
+    <!-- STEP 2: Nome -->
+    <div class="step" data-step="2">
+      <div class="step-content">
+        <h1>Qual é o seu nome?</h1>
+        <p>Como podemos te chamar?</p>
+
+        <div class="form-group">
+          <input type="text" id="nome" required placeholder="Digite seu nome" class="input-large">
+        </div>
+
+        <button class="btn-primary" onclick="nextStep()">Continuar</button>
       </div>
+    </div>
 
-      <div class="nav-section">
-        <div class="nav-section-title">Configurações</div>
-        <button class="nav-btn" data-view="settings">
-          <span>⚙️</span>
-          <span>Configurações</span>
-        </button>
+    <!-- STEP 3: Idade -->
+    <div class="step" data-step="3">
+      <div class="step-content">
+        <h1>Quantos anos você tem?</h1>
+        <p>Isso nos ajuda a personalizar sua experiência</p>
+
+        <div class="form-group">
+          <input type="number" id="idade" required placeholder="18" min="5" max="120" class="input-large">
+        </div>
+
+        <button class="btn-primary" onclick="nextStep()">Continuar</button>
       </div>
-    </nav>
-  </aside>
+    </div>
 
-  <main class="main-content">
-    
-    <!-- DASHBOARD -->
-    <section id="dashboard" class="view active">
-      <div class="page-header">
-        <h2>Dashboard</h2>
-        <p>Acompanhe seu progresso de aprendizado</p>
-      </div>
+    <!-- STEP 4: Idiomas - TODOS OS IDIOMAS DO MUNDO -->
+    <div class="step" data-step="4">
+      <div class="step-content">
+        <h1>Qual(is) idioma(s) você deseja aprender?</h1>
+        <p>Selecione um ou mais idiomas</p>
 
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-header">
-            <div class="stat-title">Hoje</div>
-          </div>
-          <div class="stat-value" id="statToday">0</div>
-          <div class="stat-change">cartões estudados</div>
+        <div style="margin-bottom: 1rem;">
+          <input type="text" id="languageSearch" placeholder="🔍 Buscar idioma..." 
+                 style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem;"
+                 oninput="filterLanguages(this.value)">
         </div>
 
-        <div class="stat-card">
-          <div class="stat-header">
-            <div class="stat-title">Acertos</div>
-          </div>
-          <div class="stat-value" id="statAccuracy">0%</div>
-          <div class="stat-change">taxa de sucesso</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-header">
-            <div class="stat-title">Sequência</div>
-          </div>
-          <div class="stat-value" id="statStreak">0</div>
-          <div class="stat-change">dias consecutivos</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-header">
-            <div class="stat-title">Decks</div>
-          </div>
-          <div class="stat-value" id="statDecks">0</div>
-          <div class="stat-change" id="statCards">0 cartões</div>
-        </div>
-      </div>
-
-      <div class="page-header" style="margin-top: 2rem;">
-        <h2>Revisões Pendentes</h2>
-        <p>Cartões que precisam ser revisados hoje</p>
-      </div>
-
-      <div id="reviewCards" class="cards-grid"></div>
-    </section>
-
-    <!-- STUDY -->
-    <section id="studyView" class="view">
-      <div class="flashcard-study">
-        <div class="page-header">
-          <h2 id="studyDeckName">Selecione um Deck</h2>
-          <p id="studyProgress">Pronto para começar</p>
-        </div>
-
-        <div class="mode-selector" id="modeSelector">
-          <div class="mode-card active" data-mode="normal">
-            <div class="mode-title">Normal</div>
-            <div class="mode-desc">Vire o cartão</div>
-          </div>
-          <div class="mode-card" data-mode="reverse">
-            <div class="mode-title">Reverso</div>
-            <div class="mode-desc">Verso primeiro</div>
-          </div>
-          <div class="mode-card" data-mode="typing">
-            <div class="mode-title">Digitação</div>
-            <div class="mode-desc">Escreva a resposta</div>
-          </div>
-        </div>
-
-        <div class="progress-bar">
-          <div class="progress-fill" id="studyProgressBar"></div>
-        </div>
-
-        <div class="flashcard-container" id="flashcardContainer">
-          <div class="flashcard-content">
-            <div class="flashcard-text" id="flashcardText">Selecione um deck para começar</div>
-            <div class="flashcard-hint" id="flashcardHint">
-              <span>Clique em um deck no Dashboard</span>
+        <div class="options-grid" id="languagesGrid" style="max-height: 500px; overflow-y: auto;">
+          <!-- Idiomas Populares -->
+          <label class="option-card" data-language="inglês">
+            <input type="checkbox" name="idiomas" value="Inglês">
+            <div class="option-content">
+              <span class="option-flag">🇺🇸</span>
+              <span class="option-text">Inglês</span>
             </div>
-            <button class="audio-btn" id="audioBtn" style="display: none;" onclick="event.stopPropagation(); app.speakText();">
-              🔊 Ouvir
-            </button>
-            <input type="text" class="typing-input" id="typingInput" style="display: none;" placeholder="Digite sua resposta...">
-          </div>
+          </label>
+
+          <label class="option-card" data-language="espanhol">
+            <input type="checkbox" name="idiomas" value="Espanhol">
+            <div class="option-content">
+              <span class="option-flag">🇪🇸</span>
+              <span class="option-text">Espanhol</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="francês">
+            <input type="checkbox" name="idiomas" value="Francês">
+            <div class="option-content">
+              <span class="option-flag">🇫🇷</span>
+              <span class="option-text">Francês</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="italiano">
+            <input type="checkbox" name="idiomas" value="Italiano">
+            <div class="option-content">
+              <span class="option-flag">🇮🇹</span>
+              <span class="option-text">Italiano</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="alemão">
+            <input type="checkbox" name="idiomas" value="Alemão">
+            <div class="option-content">
+              <span class="option-flag">🇩🇪</span>
+              <span class="option-text">Alemão</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="japonês">
+            <input type="checkbox" name="idiomas" value="Japonês">
+            <div class="option-content">
+              <span class="option-flag">🇯🇵</span>
+              <span class="option-text">Japonês</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="coreano">
+            <input type="checkbox" name="idiomas" value="Coreano">
+            <div class="option-content">
+              <span class="option-flag">🇰🇷</span>
+              <span class="option-text">Coreano</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="chinês">
+            <input type="checkbox" name="idiomas" value="Chinês">
+            <div class="option-content">
+              <span class="option-flag">🇨🇳</span>
+              <span class="option-text">Chinês</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="russo">
+            <input type="checkbox" name="idiomas" value="Russo">
+            <div class="option-content">
+              <span class="option-flag">🇷🇺</span>
+              <span class="option-text">Russo</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="árabe">
+            <input type="checkbox" name="idiomas" value="Árabe">
+            <div class="option-content">
+              <span class="option-flag">🇸🇦</span>
+              <span class="option-text">Árabe</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="hindi">
+            <input type="checkbox" name="idiomas" value="Hindi">
+            <div class="option-content">
+              <span class="option-flag">🇮🇳</span>
+              <span class="option-text">Hindi</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="turco">
+            <input type="checkbox" name="idiomas" value="Turco">
+            <div class="option-content">
+              <span class="option-flag">🇹🇷</span>
+              <span class="option-text">Turco</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="holandês">
+            <input type="checkbox" name="idiomas" value="Holandês">
+            <div class="option-content">
+              <span class="option-flag">🇳🇱</span>
+              <span class="option-text">Holandês</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="sueco">
+            <input type="checkbox" name="idiomas" value="Sueco">
+            <div class="option-content">
+              <span class="option-flag">🇸🇪</span>
+              <span class="option-text">Sueco</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="norueguês">
+            <input type="checkbox" name="idiomas" value="Norueguês">
+            <div class="option-content">
+              <span class="option-flag">🇳🇴</span>
+              <span class="option-text">Norueguês</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="dinamarquês">
+            <input type="checkbox" name="idiomas" value="Dinamarquês">
+            <div class="option-content">
+              <span class="option-flag">🇩🇰</span>
+              <span class="option-text">Dinamarquês</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="finlandês">
+            <input type="checkbox" name="idiomas" value="Finlandês">
+            <div class="option-content">
+              <span class="option-flag">🇫🇮</span>
+              <span class="option-text">Finlandês</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="polonês">
+            <input type="checkbox" name="idiomas" value="Polonês">
+            <div class="option-content">
+              <span class="option-flag">🇵🇱</span>
+              <span class="option-text">Polonês</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="grego">
+            <input type="checkbox" name="idiomas" value="Grego">
+            <div class="option-content">
+              <span class="option-flag">🇬🇷</span>
+              <span class="option-text">Grego</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="hebraico">
+            <input type="checkbox" name="idiomas" value="Hebraico">
+            <div class="option-content">
+              <span class="option-flag">🇮🇱</span>
+              <span class="option-text">Hebraico</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="tailandês">
+            <input type="checkbox" name="idiomas" value="Tailandês">
+            <div class="option-content">
+              <span class="option-flag">🇹🇭</span>
+              <span class="option-text">Tailandês</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="vietnamita">
+            <input type="checkbox" name="idiomas" value="Vietnamita">
+            <div class="option-content">
+              <span class="option-flag">🇻🇳</span>
+              <span class="option-text">Vietnamita</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="indonésio">
+            <input type="checkbox" name="idiomas" value="Indonésio">
+            <div class="option-content">
+              <span class="option-flag">🇮🇩</span>
+              <span class="option-text">Indonésio</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="malaio">
+            <input type="checkbox" name="idiomas" value="Malaio">
+            <div class="option-content">
+              <span class="option-flag">🇲🇾</span>
+              <span class="option-text">Malaio</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="tagalo">
+            <input type="checkbox" name="idiomas" value="Tagalo">
+            <div class="option-content">
+              <span class="option-flag">🇵🇭</span>
+              <span class="option-text">Tagalo</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="ucraniano">
+            <input type="checkbox" name="idiomas" value="Ucraniano">
+            <div class="option-content">
+              <span class="option-flag">🇺🇦</span>
+              <span class="option-text">Ucraniano</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="tcheco">
+            <input type="checkbox" name="idiomas" value="Tcheco">
+            <div class="option-content">
+              <span class="option-flag">🇨🇿</span>
+              <span class="option-text">Tcheco</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="húngaro">
+            <input type="checkbox" name="idiomas" value="Húngaro">
+            <div class="option-content">
+              <span class="option-flag">🇭🇺</span>
+              <span class="option-text">Húngaro</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="romeno">
+            <input type="checkbox" name="idiomas" value="Romeno">
+            <div class="option-content">
+              <span class="option-flag">🇷🇴</span>
+              <span class="option-text">Romeno</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="búlgaro">
+            <input type="checkbox" name="idiomas" value="Búlgaro">
+            <div class="option-content">
+              <span class="option-flag">🇧🇬</span>
+              <span class="option-text">Búlgaro</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="croata">
+            <input type="checkbox" name="idiomas" value="Croata">
+            <div class="option-content">
+              <span class="option-flag">🇭🇷</span>
+              <span class="option-text">Croata</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="sérvio">
+            <input type="checkbox" name="idiomas" value="Sérvio">
+            <div class="option-content">
+              <span class="option-flag">🇷🇸</span>
+              <span class="option-text">Sérvio</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="catalão">
+            <input type="checkbox" name="idiomas" value="Catalão">
+            <div class="option-content">
+              <span class="option-flag">🏴</span>
+              <span class="option-text">Catalão</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="persa">
+            <input type="checkbox" name="idiomas" value="Persa">
+            <div class="option-content">
+              <span class="option-flag">🇮🇷</span>
+              <span class="option-text">Persa</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="swahili">
+            <input type="checkbox" name="idiomas" value="Swahili">
+            <div class="option-content">
+              <span class="option-flag">🇰🇪</span>
+              <span class="option-text">Swahili</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="africâner">
+            <input type="checkbox" name="idiomas" value="Africâner">
+            <div class="option-content">
+              <span class="option-flag">🇿🇦</span>
+              <span class="option-text">Africâner</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="bengali">
+            <input type="checkbox" name="idiomas" value="Bengali">
+            <div class="option-content">
+              <span class="option-flag">🇧🇩</span>
+              <span class="option-text">Bengali</span>
+            </div>
+          </label>
+
+          <label class="option-card" data-language="urdu">
+            <input type="checkbox" name="idiomas" value="Urdu">
+            <div class="option-content">
+              <span class="option-flag">🇵🇰</span>
+              <span class="option-text">Urdu</span>
+            </div>
+          </label>
         </div>
 
-        <div id="ratingButtons" style="display: none;">
-          <div class="rating-buttons">
-            <button class="rating-btn again" onclick="app.rateCard(1)">
-              <div>❌</div>
-              <div class="rating-label">Errei</div>
-              <div class="rating-time">1 min</div>
-            </button>
-            <button class="rating-btn hard" onclick="app.rateCard(2)">
-              <div>😕</div>
-              <div class="rating-label">Difícil</div>
-              <div class="rating-time">10 min</div>
-            </button>
-            <button class="rating-btn good" onclick="app.rateCard(3)">
-              <div>✅</div>
-              <div class="rating-label">Bom</div>
-              <div class="rating-time">1 dia</div>
-            </button>
-            <button class="rating-btn easy" onclick="app.rateCard(4)">
-              <div>🎯</div>
-              <div class="rating-label">Fácil</div>
-              <div class="rating-time">4 dias</div>
-            </button>
-          </div>
-        </div>
-
-        <div class="study-controls">
-          <button class="ctrl-btn" onclick="app.previousCard()" id="btnPrev">◀</button>
-          <button class="ctrl-btn-main" onclick="app.flipCard()" id="btnFlip">🔄</button>
-          <button class="ctrl-btn" onclick="app.nextCard()" id="btnNext">▶</button>
-        </div>
+        <button class="btn-primary" onclick="nextStep()" style="margin-top: 1rem;">Continuar</button>
       </div>
-    </section>
+    </div>
 
-    <!-- DECKS -->
-    <section id="decks" class="view">
-      <div class="page-header">
-        <h2>Meus Decks</h2>
-        <p>Organize e gerencie seus decks de estudo</p>
-      </div>
+    <!-- Resto dos steps continuam iguais -->
+    <!-- STEP 5: Objetivo -->
+    <div class="step" data-step="5">
+      <div class="step-content">
+        <h1>Qual é o seu objetivo?</h1>
+        <p>Por que você quer aprender um novo idioma?</p>
 
-      <div id="decksList" class="cards-grid"></div>
-
-      <div id="emptyDecks" class="empty-state" style="display: none;">
-        <div class="empty-icon">🎴</div>
-        <h3>Nenhum deck criado</h3>
-        <p style="margin: 1rem 0;">Comece criando seu primeiro deck de estudos</p>
-        <button class="btn btn-primary" onclick="app.showView('create')">
-          ➕ Criar Primeiro Deck
-        </button>
-      </div>
-    </section>
-
-    <!-- CREATE -->
-    <section id="create" class="view">
-      <div class="page-header">
-        <h2>Criar Novo Deck</h2>
-        <p>Adicione cartões para começar seus estudos</p>
-      </div>
-
-      <div class="form-container">
-        <div class="form-group">
-          <label class="form-label">Nome do Deck *</label>
-          <input type="text" class="form-input" id="deckName" placeholder="Ex: Vocabulário Inglês - Básico">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Descrição</label>
-          <input type="text" class="form-input" id="deckDesc" placeholder="Ex: Palavras essenciais do dia a dia">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Pasta</label>
-          <select class="form-select" id="deckFolder">
-            <option value="">Sem pasta</option>
-            <option value="__new__">➕ Criar nova pasta</option>
-          </select>
-        </div>
-
-        <div class="form-group" id="newFolderGroup" style="display: none;">
-          <label class="form-label">Nome da Nova Pasta</label>
-          <input type="text" class="form-input" id="newFolderName" placeholder="Ex: Inglês">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Cartões (frente e verso em linhas alternadas) *</label>
-          <textarea class="form-textarea" id="deckCards" rows="12" placeholder="Hello&#10;Olá&#10;Goodbye&#10;Adeus&#10;Thank you&#10;Obrigado"></textarea>
-          <small style="color: var(--text-muted); margin-top: 0.5rem; display: block;">
-            💡 Digite alternando: Linha 1 = frente, Linha 2 = verso, Linha 3 = frente, e assim por diante
-          </small>
-        </div>
-
-        <div style="display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap;">
-          <button class="btn btn-primary" onclick="app.saveDeck()">
-            💾 Salvar Deck
-          </button>
-          <button class="btn btn-secondary" onclick="app.showView('decks')">
-            Cancelar
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- FOLDERS -->
-    <section id="folders" class="view">
-      <div class="page-header">
-        <h2>Pastas</h2>
-        <p>Organize seus decks por categorias</p>
-      </div>
-
-      <div id="foldersList" class="cards-grid"></div>
-    </section>
-
-    <!-- SETTINGS -->
-    <section id="settings" class="view">
-      <div class="page-header">
-        <h2>Configurações</h2>
-        <p>Personalize sua experiência de estudo</p>
-      </div>
-
-      <div class="form-container">
-        <div class="form-group">
-          <label class="form-label">Cartões Novos por Dia</label>
-          <input type="number" class="form-input" id="settingNewCards" value="20" min="1" max="100">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Revisões por Dia</label>
-          <input type="number" class="form-input" id="settingReviews" value="100" min="1" max="500">
-        </div>
-
-        <div style="margin-top: 2rem;">
-          <button class="btn btn-primary" onclick="app.saveSettings()">
-            💾 Salvar Configurações
-          </button>
-        </div>
-
-        <!-- SEÇÃO DE NOTIFICAÇÕES -->
-        <div style="margin-top: 3rem; padding-top: 2rem; border-top: 2px solid var(--border);">
-          <h3 style="margin-bottom: 1rem;">🔔 Notificações</h3>
-          <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">
-            Receba lembretes para estudar seus flashcards
-          </p>
-
-          <div class="form-group">
-            <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem;">
-              <input type="checkbox" id="notificationToggle" style="width: auto;">
-              <span>Ativar Notificações</span>
-            </label>
-            <p id="notificationStatus" style="margin-top: 0.5rem; font-size: 0.875rem;"></p>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Horários de Lembrete</label>
-            <div style="display: grid; gap: 1rem;">
-              <div style="display: flex; align-items: center; gap: 1rem;">
-                <span style="min-width: 100px;">Manhã:</span>
-                <input type="time" class="form-input notification-time-input" value="09:00">
-              </div>
-              <div style="display: flex; align-items: center; gap: 1rem;">
-                <span style="min-width: 100px;">Tarde:</span>
-                <input type="time" class="form-input notification-time-input" value="14:00">
-              </div>
-              <div style="display: flex; align-items: center; gap: 1rem;">
-                <span style="min-width: 100px;">Noite:</span>
-                <input type="time" class="form-input notification-time-input" value="19:00">
+        <div class="options-list">
+          <label class="option-radio">
+            <input type="radio" name="objetivo" value="Viagem">
+            <div class="radio-content">
+              <span class="radio-icon">✈️</span>
+              <div>
+                <strong>Viajar</strong>
+                <p>Comunicar-me em viagens</p>
               </div>
             </div>
-          </div>
+          </label>
 
-          <button class="btn btn-secondary" id="testNotification" style="margin-top: 1rem;">
-            🧪 Testar Notificação
-          </button>
+          <label class="option-radio">
+            <input type="radio" name="objetivo" value="Trabalho">
+            <div class="radio-content">
+              <span class="radio-icon">💼</span>
+              <div>
+                <strong>Trabalho</strong>
+                <p>Avançar na carreira</p>
+              </div>
+            </div>
+          </label>
+
+          <label class="option-radio">
+            <input type="radio" name="objetivo" value="Estudo">
+            <div class="radio-content">
+              <span class="radio-icon">📚</span>
+              <div>
+                <strong>Estudos</strong>
+                <p>Faculdade ou cursos</p>
+              </div>
+            </div>
+          </label>
+
+          <label class="option-radio">
+            <input type="radio" name="objetivo" value="Cultura">
+            <div class="radio-content">
+              <span class="radio-icon">🎭</span>
+              <div>
+                <strong>Cultura</strong>
+                <p>Interesse cultural</p>
+              </div>
+            </div>
+          </label>
+
+          <label class="option-radio">
+            <input type="radio" name="objetivo" value="Hobby">
+            <div class="radio-content">
+              <span class="radio-icon">🎮</span>
+              <div>
+                <strong>Hobby</strong>
+                <p>Por diversão</p>
+              </div>
+            </div>
+          </label>
         </div>
 
-        <div style="margin-top: 3rem; padding-top: 2rem; border-top: 2px solid var(--border);">
-          <h3 style="margin-bottom: 1rem;">Gerenciar Dados</h3>
-          <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-            <button class="btn btn-secondary" onclick="app.exportData()">
-              📤 Exportar
-            </button>
-            <button class="btn btn-secondary" onclick="app.importData()">
-              📥 Importar
-            </button>
-            <button class="btn btn-secondary" onclick="app.resetData()">
-              🗑️ Resetar
-            </button>
-          </div>
-        </div>
-
-        <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid var(--border);">
-          <h3 style="margin-bottom: 1rem;">Instalar Aplicativo</h3>
-          <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
-            Instale o Flashcards Pro como um aplicativo no seu dispositivo
-          </p>
-          <button class="btn btn-primary" id="installBtn" style="display: none;">
-            📲 Instalar Aplicativo
-          </button>
-          <p id="installMessage" style="color: var(--text-muted); font-size: 0.875rem;"></p>
-        </div>
+        <button class="btn-primary" onclick="nextStep()">Continuar</button>
       </div>
-    </section>
+    </div>
 
-  </main>
+    <!-- STEP 6: Tempo Disponível -->
+    <div class="step" data-step="6">
+      <div class="step-content">
+        <h1>Quanto tempo você tem por dia?</h1>
+        <p>Seja realista para criar um hábito sustentável</p>
 
-  <script src="app.js"></script>
+        <div class="options-list">
+          <label class="option-radio">
+            <input type="radio" name="tempo" value="5">
+            <div class="radio-content">
+              <span class="radio-icon">⚡</span>
+              <div>
+                <strong>5 minutos</strong>
+                <p>Rápido e eficiente</p>
+              </div>
+            </div>
+          </label>
+
+          <label class="option-radio">
+            <input type="radio" name="tempo" value="10">
+            <div class="radio-content">
+              <span class="radio-icon">⏱️</span>
+              <div>
+                <strong>10 minutos</strong>
+                <p>Prática diária leve</p>
+              </div>
+            </div>
+          </label>
+
+          <label class="option-radio">
+            <input type="radio" name="tempo" value="20">
+            <div class="radio-content">
+              <span class="radio-icon">⏰</span>
+              <div>
+                <strong>20 minutos</strong>
+                <p>Aprendizado consistente</p>
+              </div>
+            </div>
+          </label>
+
+          <label class="option-radio">
+            <input type="radio" name="tempo" value="30">
+            <div class="radio-content">
+              <span class="radio-icon">🔥</span>
+              <div>
+                <strong>30+ minutos</strong>
+                <p>Imersão profunda</p>
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <button class="btn-primary" onclick="nextStep()">Continuar</button>
+      </div>
+    </div>
+
+    <!-- STEP 7: Meta de Flashcards -->
+    <div class="step" data-step="7">
+      <div class="step-content">
+        <h1>Quantos flashcards por dia?</h1>
+        <p>Defina sua meta diária de novos cartões</p>
+
+        <div class="options-list">
+          <label class="option-radio">
+            <input type="radio" name="meta" value="5">
+            <div class="radio-content">
+              <span class="radio-icon">🌱</span>
+              <div>
+                <strong>5 cartões/dia</strong>
+                <p>Iniciante tranquilo</p>
+              </div>
+            </div>
+          </label>
+
+          <label class="option-radio">
+            <input type="radio" name="meta" value="10">
+            <div class="radio-content">
+              <span class="radio-icon">🌿</span>
+              <div>
+                <strong>10 cartões/dia</strong>
+                <p>Progresso equilibrado</p>
+              </div>
+            </div>
+          </label>
+
+          <label class="option-radio">
+            <input type="radio" name="meta" value="20">
+            <div class="radio-content">
+              <span class="radio-icon">🌳</span>
+              <div>
+                <strong>20 cartões/dia</strong>
+                <p>Aprendizado acelerado</p>
+              </div>
+            </div>
+          </label>
+
+          <label class="option-radio">
+            <input type="radio" name="meta" value="30">
+            <div class="radio-content">
+              <span class="radio-icon">🚀</span>
+              <div>
+                <strong>30+ cartões/dia</strong>
+                <p>Intensivo dedicado</p>
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <button class="btn-primary" onclick="nextStep()">Continuar</button>
+      </div>
+    </div>
+
+    <!-- STEP 8: Motivação -->
+    <div class="step" data-step="8">
+      <div class="step-content">
+        <h1>O que te motiva?</h1>
+        <p>Vamos te ajudar a manter o foco</p>
+
+        <div class="form-group">
+          <textarea id="motivacao" rows="5" placeholder="Ex: Quero me comunicar com nativos quando viajar para o Japão..." class="input-large"></textarea>
+        </div>
+
+        <button class="btn-primary" onclick="finalizarCadastro()">
+          ✨ Criar Conta
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="loading" class="loading-overlay" style="display: none;">
+    <div class="spinner"></div>
+    <p>Criando sua conta...</p>
+  </div>
+
+  <script>
+    // Filtro de idiomas
+    function filterLanguages(searchTerm) {
+      const term = searchTerm.toLowerCase();
+      const cards = document.querySelectorAll('.option-card[data-language]');
+      
+      cards.forEach(card => {
+        const language = card.getAttribute('data-language');
+        if (language.includes(term)) {
+          card.style.display = '';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+  </script>
+
+  <!-- Firebase -->
+  <script type="module" src="js/firebase-config.js"></script>
+  <script type="module" src="js/onboarding.js"></script>
 
 </body>
 </html>

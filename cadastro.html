@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#000000">
+  <title>Cadastro - Flashcards Pro</title>
+  <link rel="stylesheet" href="css/onboarding.css">
+</head>
+<body>
+  
+  <div class="onboarding-container">
+    
+    <!-- Progress Bar -->
+    <div class="progress-header">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressBar"></div>
+      </div>
+      <button class="btn-back" id="btnBack" style="display: none;">← Voltar</button>
+    </div>
+
+    <!-- STEP 1: Email e Senha -->
+    <div class="step active" data-step="1">
+      <div class="step-content">
+        <h1>Crie sua conta</h1>
+        <p>Comece sua jornada de aprendizado</p>
+
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="email" required placeholder="seu@email.com">
+        </div>
+
+        <div class="form-group">
+          <label>Senha</label>
+          <input type="password" id="password" required placeholder="Mínimo 6 caracteres">
+        </div>
+
+        <button class="btn-primary" onclick="nextStep()">Continuar</button>
+        
+        <p class="step-footer">
+          Já tem conta? <a href="login.html">Fazer login</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- STEP 2: Nome -->
+    <div class="step" data-step="2">
+      <div class="step-content">
+        <h1>Qual é o seu nome?</h1>
+        <p>Como podemos te chamar?</p>
+
+        <div class="form-group">
+          <input type="text" id="nome" required placeholder="Digite seu nome" class="input-large">
+        </div>
+
+        <button class="btn-primary" onclick="nextStep()">Continuar</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Idade -->
+    <div class="step" data-step="3">
+      <div class="step-content">
+        <h1>Quantos anos você tem?</h1>
+        <p>Isso nos ajuda a personalizar sua experiência</p>
+
+        <div class="form-group">
+          <input type="number" id="idade" required placeholder="18" min="5" max="120" class="input-large">
+        </div>
+
+        <button class="btn-primary" onclick="nextStep()">Continuar</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: Idiomas -->
+    <div class="step" data-step="4">
+      <div class="step-content">
+        <h1>Qual(is) idioma(s) você deseja aprender?</h1>
+        <p>Selecione um ou mais idiomas</p>
+
+        <div class="options-grid">
+          <label class="option-card">
+            <input type="checkbox" name="idiomas" value="Inglês">
+            <div class="option-content">
+              <span class="option-flag">🇺🇸</span>
+              <span class="option-text">Inglês</span>
+            </div>
+          </label>
+
+          <label class="option-card">
+            <input type="checkbox" name="idiomas" value="Espanhol">
+            <div class="option-content">
+              <span class="option-flag">🇪🇸</span>
+              <span class="option-text">Espanhol</span>
+            </div>
+          </label>
+
+          <label class="option-card">
+            <input type="checkbox" name="idiomas" value="Francês">
+            <div class="option-content">
+              <span class="option-flag">🇫🇷</span>
+              <span class="option-text">Francês</span>
+            </div>
+          </label>
+
+          <label class="option-card">
+            <input type="checkbox" name="idiomas" value="Italiano">
+            <div class="option-content">
+              <span class="option-flag">🇮🇹</span>
+              <span class="option-text">Italiano</span>
+            </div>
+          </label>
+
+          <label class="option-card">
+            <input type="checkbox" name="idiomas" value="Alemão">
+            <div class="option-content">
+              <span class="option-flag">🇩🇪</span>
+              <span class="option-text">Alemão</span>
+            </div>
+          </label>
+
+          <label class="option-card">
+            <input type="checkbox" name="idiomas" value="Japonês">
+            <div class="option-content">
+              <span class="option-flag">🇯🇵</span>
+              <span class="option-text">Japonês</span>
+            </div>
+          </label>
+
+          <label class="option-card">
+            <input type="checkbox" name="idiomas" value="Coreano">
+            <div class="option-content">
+              <span class="option-flag">🇰🇷</span>
+              <span class="option-text">Coreano</span>
+            </div>
+          </label>
+
+          <label class="option-card">
+            <input type="checkbox" name="idiomas" value="Chinês">
+            <div class="option-content">
+              <span class="option-flag">🇨🇳</span>
+              <span class="option-text">Chinês</span>
+            </div>
+          </label>
+        </div>
+
+        <button class="btn-primary" onclick="nextStep()">Continuar</button>
+      </div>
+    </div>
+
+    <!-- STEP 5: Objetivo -->
+    <div class="step" data-step="5">
+      <div class="step-content">
+        <h1>Qual é o seu objetivo?</h1>
+        <p>Por que você quer aprender um novo idioma?</p>
+
+        <div class="options-list">
+          <label class="option-radio">
+            <input type="radio" name="objetivo" value="Viagem">
+            <div class="radio-content">
+              <span class="radio-icon">✈️</span>
+              <div>
+                <strong>Viajar</strong>
+                <p>Comunicar-me em viagens</p>
+              </div>
+            </div>
+          </label>
+
+          <label class="option-radio">
+            <input type="radio" name="objetivo" value="Trabalho">
+            <div class="radio-content">
+              <span class="radio-icon">💼</span>
+              <div>
+                <strong>Trabalho</strong>
+                <p>Avançar na carreira</p>
+              </div>
+            </div>
+          </label>
+
+          <label class="option-radio">
+            <input type="radio" name="objetivo" value="Estudo">
+            <div class="radio-content">
+              <span class="radio-icon">📚</span>
+              <div>
+                <strong>Estudos</strong>
+                <p>Faculdade ou cursos</p>
+              </div>
+            </div>
+          </label>
+
+          <label class="option-radio">
+            <input type="radio" name="objetivo" value="Cultura">
+            <div class="radio-content">
+              <span class="radio-icon">🎭</span>
+              <div>
+                <strong>Cultura</strong>
+                <p>Interesse cultural</p>
+              </div>
+            </div>
+          </label>
+
+          <label class="option-radio">
+            <input type="radio" name="objetivo" value="Hobby">
+            <div class="radio-content">
+              <span class="radio-icon">🎮</span>
+              <div>
+                <strong>Hobby</strong>
+                <p>Por diversão</p>
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <button class="btn-primary" onclick="nextStep()">Continuar</button>
+      </div>
+    </div>
+
+    <!-- STEP 6: Tempo Disponível -->
+    <div class="step" data-step="6">
+      <div class="step-content">
+        <h1>Quanto tempo você tem por dia?</h1>
+        <p>Seja realista para criar um hábito sustentável</p>
+
+        <div class="options-list">
+          <label class="option-radio">
+            <input type="radio" name="tempo" value="5">
+            <div class="radio-content">
+              <span class="radio-icon">⚡</span>
+              <div>
+                <strong>5 minutos</strong>
+                <p>Rápido e eficiente</p>
+              </div>
+            </div>
+          </label>
+
+          <label class="option-radio">
+            <input type="radio" name="tempo" value="10">
+            <div class="radio-content">
+              <span class="radio-icon">⏱️</span>
+              <div>
+                <strong>10 minutos</strong>
+                <p>Prática diária leve</p>
+              </div>
+            </div>
+          </label>
+
+          <label class="option-radio">
+            <input type="radio" name="tempo" value="20">
+            <div class="radio-content">
+              <span class="radio-icon">⏰</span>
+              <div>
+                <strong>20 minutos</strong>
+                <p>Aprendizado consistente</p>
+              </div>
+            </div>
+          </label>
+
+          <label class="option-radio">
+            <input type="radio" name="tempo" value="30">
+            <div class="radio-content">
+              <span class="radio-icon">🔥</span>
+              <div>
+                <strong>30+ minutos</strong>
+                <p>Imersão profunda</p>
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <button class="btn-primary" onclick="nextStep()">Continuar</button>
+      </div>
+    </div>
+
+    <!-- STEP 7: Meta de Flashcards -->
+    <div class="step" data-step="7">
+      <div class="step-content">
+        <h1>Quantos flashcards por dia?</h1>
+        <p>Defina sua meta diária de novos cartões</p>
+
+        <div class="options-list">
+          <label class="option-radio">
+            <input type="radio" name="meta" value="5">
+            <div class="radio-content">
+              <span class="radio-icon">🌱</span>
+              <div>
+                <strong>5 cartões/dia</strong>
+                <p>Iniciante tranquilo</p>
+              </div>
+            </div>
+          </label>
+
+          <label class="option-radio">
+            <input type="radio" name="meta" value="10">
+            <div class="radio-content">
+              <span class="radio-icon">🌿</span>
+              <div>
+                <strong>10 cartões/dia</strong>
+                <p>Progresso equilibrado</p>
+              </div>
+            </div>
+          </label>
+
+          <label class="option-radio">
+            <input type="radio" name="meta" value="20">
+            <div class="radio-content">
+              <span class="radio-icon">🌳</span>
+              <div>
+                <strong>20 cartões/dia</strong>
+                <p>Aprendizado acelerado</p>
+              </div>
+            </div>
+          </label>
+
+          <label class="option-radio">
+            <input type="radio" name="meta" value="30">
+            <div class="radio-content">
+              <span class="radio-icon">🚀</span>
+              <div>
+                <strong>30+ cartões/dia</strong>
+                <p>Intensivo dedicado</p>
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <button class="btn-primary" onclick="nextStep()">Continuar</button>
+      </div>
+    </div>
+
+    <!-- STEP 8: Motivação -->
+    <div class="step" data-step="8">
+      <div class="step-content">
+        <h1>O que te motiva?</h1>
+        <p>Vamos te ajudar a manter o foco</p>
+
+        <div class="form-group">
+          <textarea id="motivacao" rows="5" placeholder="Ex: Quero me comunicar com nativos quando viajar para o Japão..." class="input-large"></textarea>
+        </div>
+
+        <button class="btn-primary" onclick="finalizarCadastro()">
+          ✨ Criar Conta
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="loading" class="loading-overlay" style="display: none;">
+    <div class="spinner"></div>
+    <p>Criando sua conta...</p>
+  </div>
+
+  <!-- Firebase -->
+  <script type="module" src="js/firebase-config.js"></script>
+  <script type="module" src="js/onboarding.js"></script>
+
+</body>
+</html>

@@ -2,7 +2,7 @@ const CACHE_NAME = 'flashcards-musicais-v1';
 const urlsToCache = [
   './',
   './index.html',
-  './style.css',
+  './app.css',
   './app.js',
   './manifest.json'
 ];
