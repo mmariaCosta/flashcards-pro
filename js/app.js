@@ -1,4 +1,5 @@
-// ===== PARTE 1: IMPORTAÇÕES E CONFIGURAÇÃO INICIAL =====
+// ===== APP.JS - PARTE 1 DE 8 (COMPLETA E CORRIGIDA) =====
+// ===== IMPORTAÇÕES E CONFIGURAÇÃO INICIAL =====
 import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { 
@@ -57,6 +58,9 @@ class FlashcardsApp {
   async init() {
     this.showLoading(true);
     
+    // Configurar PWA Install
+    this.setupPWA();
+    
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         this.user = user;
@@ -67,6 +71,49 @@ class FlashcardsApp {
       } else {
         window.location.href = 'index.html';
       }
+    });
+  }
+
+  // ===== SETUP PWA INSTALLATION =====
+  setupPWA() {
+    let deferredPrompt;
+    const installPrompt = document.getElementById('installPrompt');
+    const installButton = document.getElementById('installButton');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      
+      if (installPrompt) {
+        installPrompt.style.display = 'block';
+      }
+
+      console.log('✅ PWA: Pronto para instalação');
+    });
+
+    if (installButton) {
+      installButton.addEventListener('click', async () => {
+        if (!deferredPrompt) {
+          alert('ℹ️ Para instalar:\n\n• Chrome: Menu (⋮) → "Instalar app"\n• Safari: Compartilhar → "Adicionar à Tela Inicial"');
+          return;
+        }
+
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        
+        if (outcome === 'accepted') {
+          console.log('✅ App instalado!');
+          if (installPrompt) installPrompt.style.display = 'none';
+        }
+        
+        deferredPrompt = null;
+      });
+    }
+
+    window.addEventListener('appinstalled', () => {
+      console.log('✅ PWA instalado com sucesso!');
+      if (installPrompt) installPrompt.style.display = 'none';
+      alert('🎉 Aplicativo instalado com sucesso!\n\nAgora você pode usá-lo como um app nativo.');
     });
   }
 
@@ -107,11 +154,60 @@ class FlashcardsApp {
         ...doc.data()
       }));
 
-      this.updateStreak();
+      // CORRIGIDO: Resetar e atualizar sequência
+      await this.checkAndResetDailyStats();
       
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       alert('Erro ao carregar seus dados. Tente novamente.');
+    }
+  }
+
+  // ===== VERIFICAR E RESETAR ESTATÍSTICAS DIÁRIAS (NOVO) =====
+  async checkAndResetDailyStats() {
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const lastStudy = this.stats.lastStudyDate;
+
+    console.log('📅 Verificando data:', {
+      hoje: today,
+      ultimoEstudo: lastStudy,
+      estudadosHoje: this.stats.studiedToday
+    });
+
+    // Se nunca estudou antes
+    if (!lastStudy) {
+      this.stats.streak = 0;
+      this.stats.studiedToday = 0;
+      console.log('🆕 Primeiro estudo - resetando stats');
+      return;
+    }
+
+    // Se o último estudo foi em outro dia
+    if (lastStudy !== today) {
+      const lastDate = new Date(lastStudy + 'T00:00:00');
+      const todayDate = new Date(today + 'T00:00:00');
+      const diffTime = todayDate - lastDate;
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+      console.log('📊 Diferença de dias:', diffDays);
+
+      // RESETAR contador diário
+      this.stats.studiedToday = 0;
+
+      // Atualizar sequência
+      if (diffDays === 1) {
+        // Estudou ontem - mantém sequência
+        console.log('✅ Estudou ontem - mantendo sequência:', this.stats.streak);
+      } else if (diffDays > 1) {
+        // Quebrou a sequência
+        this.stats.streak = 0;
+        console.log('❌ Sequência quebrada - resetando para 0');
+      }
+
+      // Salvar no Firebase
+      await this.saveStats();
+    } else {
+      console.log('✅ Já estudou hoje - mantendo contador:', this.stats.studiedToday);
     }
   }
 
@@ -122,6 +218,7 @@ class FlashcardsApp {
       await updateDoc(userDocRef, {
         stats: this.stats
       });
+      console.log('💾 Stats salvos:', this.stats);
     } catch (error) {
       console.error('Erro ao salvar stats:', error);
     }
@@ -163,27 +260,10 @@ class FlashcardsApp {
     }
   }
 
-  // ===== ATUALIZAR SEQUÊNCIA DE ESTUDOS =====
-  updateStreak() {
-    const today = new Date().toISOString().split('T')[0];
-    const lastStudy = this.stats.lastStudyDate;
-
-    if (!lastStudy) {
-      this.stats.streak = 0;
-      return;
-    }
-
-    const lastDate = new Date(lastStudy);
-    const todayDate = new Date(today);
-    const diffTime = Math.abs(todayDate - lastDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays > 1) {
-      this.stats.streak = 0;
-      this.saveStats();
-    }
-  }
-  // ===== PARTE 2: SETUP DA INTERFACE E NAVEGAÇÃO =====
+// ===== FIM DA PARTE 1 - CONTINUE COM A PARTE 2 =====
+// ===== FIM DA PARTE 1 - CONTINUE COM A PARTE 2 =====
+// ===== APP.JS - PARTE 2 DE 8 =====
+// ===== SETUP DA INTERFACE E NAVEGAÇÃO =====
 
   // ===== CONFIGURAR TODA A UI =====
   setupUI() {
@@ -377,7 +457,9 @@ class FlashcardsApp {
     this.updateFolderSelect();
   }
 
-// ===== PARTE 3: RENDERIZAÇÃO DO DASHBOARD =====
+// ===== FIM DA PARTE 2 - CONTINUE COM A PARTE 3 =====
+// ===== APP.JS - PARTE 3 DE 8 =====
+// ===== RENDERIZAÇÃO DO DASHBOARD =====
 
   renderDashboard() {
     // ===== PLANO PERSONALIZADO =====
@@ -467,9 +549,9 @@ class FlashcardsApp {
     return new Date(card.nextReview) <= new Date();
   }
 
-// ===== PARTE 4: RENDERIZAÇÃO DE MEUS DECKS =====
-
- // ===== SUBSTITUIR A FUNÇÃO renderDecks() NO app.js =====
+// ===== FIM DA PARTE 3 - CONTINUE COM A PARTE 4 =====
+// ===== APP.JS - PARTE 4 DE 8 =====
+// ===== RENDERIZAÇÃO DE MEUS DECKS =====
 
   renderDecks() {
     const container = document.getElementById('decksList');
@@ -649,7 +731,8 @@ class FlashcardsApp {
     }
   }
 
-// ===== PARTE 5: DECKS DE EXEMPLO =====
+// ===== APP.JS - PARTE 5 DE 8 (TOTALMENTE CORRIGIDA) =====
+// ===== DECKS DE EXEMPLO E PASTAS COM EDIÇÃO COMPLETA =====
 
   renderExampleDecks() {
     const container = document.getElementById('exampleDecksList');
@@ -694,11 +777,10 @@ class FlashcardsApp {
     try {
       const exampleDeck = EXAMPLE_DECKS[deckKey];
       
-      // ATENÇÃO: Cards agora vêm na ordem CORRETA (PT → Idioma)
       const cards = exampleDeck.cards.map((card, i) => ({
         id: Date.now() + i,
-        front: card.back,  // PORTUGUÊS na frente
-        back: card.front,  // IDIOMA ESTRANGEIRO no verso
+        front: card.front,
+        back: card.back,
         level: 0,
         nextReview: new Date().toISOString(),
         history: [],
@@ -736,7 +818,7 @@ class FlashcardsApp {
     }
   }
 
-// ===== PARTE 6: PASTAS =====
+// ===== PASTAS COM EDIÇÃO E DELEÇÃO =====
 
   renderFolders() {
     const container = document.getElementById('foldersList');
@@ -762,21 +844,33 @@ class FlashcardsApp {
       card.innerHTML = `
         <div class="card-title">📁 ${folder.name}</div>
         <div class="card-subtitle">${deckCount} deck(s) nesta pasta</div>
-        <button class="btn btn-primary" style="margin-top: 1rem; width: 100%;">
-          👁️ Ver Cartões
-        </button>
+        
+        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+          <button class="btn btn-primary" style="flex: 1;">
+            👁️ Ver Cartões
+          </button>
+          <button class="btn btn-secondary" style="padding: 0.875rem 1rem;" title="Excluir pasta">
+            🗑️
+          </button>
+        </div>
       `;
       
-      card.querySelector('.btn-primary').onclick = (e) => {
+      const buttons = card.querySelectorAll('button');
+      buttons[0].onclick = (e) => {
         e.stopPropagation();
         this.viewFolderCards(folder.name);
+      };
+      
+      buttons[1].onclick = (e) => {
+        e.stopPropagation();
+        this.deleteFolder(folder.id, folder.name);
       };
       
       container.appendChild(card);
     });
   }
 
-  // ===== VER CARTÕES DA PASTA =====
+  // ===== VER CARTÕES DA PASTA (COM EDIÇÃO) =====
   viewFolderCards(folderName) {
     const decksInFolder = this.decks.filter(d => d.folder === folderName);
     const allCards = [];
@@ -808,21 +902,75 @@ class FlashcardsApp {
     
     modalContent.innerHTML = `
       <div style="display: grid; gap: 1rem;">
-        ${allCards.map((card, i) => `
-          <div style="background: var(--bg-primary); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border);">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+        ${allCards.map((card) => `
+          <div id="card-container-${card.id}" style="background: var(--bg-primary); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
               <strong style="color: var(--text-secondary); font-size: 0.875rem;">${card.deckName}</strong>
-              <span style="color: var(--text-muted); font-size: 0.875rem;">Nível ${card.level || 0}</span>
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <span style="color: var(--text-muted); font-size: 0.875rem;">Nível ${card.level || 0}</span>
+                <button 
+                  class="edit-card-btn-${card.id}"
+                  style="background: var(--accent); color: white; border: none; padding: 0.4rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 600;"
+                  title="Editar cartão"
+                >
+                  ✏️ Editar
+                </button>
+                <button 
+                  class="delete-card-btn-${card.id}"
+                  style="background: var(--danger); color: white; border: none; padding: 0.4rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 600;"
+                  title="Excluir cartão"
+                >
+                  🗑️
+                </button>
+              </div>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 1.5rem; align-items: center;">
+            
+            <!-- MODO VISUALIZAÇÃO -->
+            <div id="view-${card.id}" style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 1.5rem; align-items: center;">
               <div>
                 <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--text-secondary);">🇧🇷 Português:</div>
-                <div style="font-size: 1.1rem;">${card.front}</div>
+                <div style="font-size: 1.1rem; word-break: break-word;">${this.escapeHtml(card.front)}</div>
               </div>
               <div style="font-size: 1.5rem; color: var(--text-muted);">→</div>
               <div>
                 <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--text-secondary);">🌍 ${folderName}:</div>
-                <div style="font-size: 1.1rem; color: var(--accent);">${card.back}</div>
+                <div style="font-size: 1.1rem; color: var(--accent); word-break: break-word;">${this.escapeHtml(card.back)}</div>
+              </div>
+            </div>
+
+            <!-- MODO EDIÇÃO -->
+            <div id="edit-${card.id}" style="display: none;">
+              <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-secondary);">🇧🇷 Português:</label>
+                <input 
+                  type="text" 
+                  id="front-${card.id}" 
+                  value="${this.escapeHtml(card.front)}" 
+                  style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; font-family: inherit;"
+                >
+              </div>
+              <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-secondary);">🌍 ${folderName}:</label>
+                <input 
+                  type="text" 
+                  id="back-${card.id}" 
+                  value="${this.escapeHtml(card.back)}" 
+                  style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; font-family: inherit;"
+                >
+              </div>
+              <div style="display: flex; gap: 0.5rem;">
+                <button 
+                  class="save-card-btn-${card.id}"
+                  style="flex: 1; background: var(--success); color: white; border: none; padding: 0.75rem; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: inherit;"
+                >
+                  ✅ Salvar
+                </button>
+                <button 
+                  class="cancel-card-btn-${card.id}"
+                  style="flex: 1; background: var(--text-muted); color: white; border: none; padding: 0.75rem; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: inherit;"
+                >
+                  ❌ Cancelar
+                </button>
               </div>
             </div>
           </div>
@@ -831,6 +979,215 @@ class FlashcardsApp {
     `;
     
     modal.style.display = 'flex';
+    
+    // Adicionar event listeners depois que o HTML for renderizado
+    allCards.forEach(card => {
+      const editBtn = modal.querySelector(`.edit-card-btn-${card.id}`);
+      const deleteBtn = modal.querySelector(`.delete-card-btn-${card.id}`);
+      const saveBtn = modal.querySelector(`.save-card-btn-${card.id}`);
+      const cancelBtn = modal.querySelector(`.cancel-card-btn-${card.id}`);
+      
+      if (editBtn) {
+        editBtn.onclick = () => this.editCard(card.id);
+      }
+      
+      if (deleteBtn) {
+        deleteBtn.onclick = () => this.deleteCard(card.deckId, card.id, folderName);
+      }
+      
+      if (saveBtn) {
+        saveBtn.onclick = () => this.saveCardEdit(card.deckId, card.id, folderName);
+      }
+      
+      if (cancelBtn) {
+        cancelBtn.onclick = () => this.cancelCardEdit(card.id);
+      }
+    });
+  }
+
+  // ===== FUNÇÃO AUXILIAR PARA ESCAPAR HTML =====
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // ===== EDITAR CARTÃO =====
+  editCard(cardId) {
+    const viewDiv = document.getElementById(`view-${cardId}`);
+    const editDiv = document.getElementById(`edit-${cardId}`);
+    
+    if (viewDiv && editDiv) {
+      viewDiv.style.display = 'none';
+      editDiv.style.display = 'block';
+      
+      // Focar no primeiro input
+      const frontInput = document.getElementById(`front-${cardId}`);
+      if (frontInput) frontInput.focus();
+    }
+  }
+
+  // ===== CANCELAR EDIÇÃO =====
+  cancelCardEdit(cardId) {
+    const viewDiv = document.getElementById(`view-${cardId}`);
+    const editDiv = document.getElementById(`edit-${cardId}`);
+    
+    if (viewDiv && editDiv) {
+      viewDiv.style.display = 'grid';
+      editDiv.style.display = 'none';
+    }
+  }
+
+  // ===== SALVAR EDIÇÃO DO CARTÃO =====
+  async saveCardEdit(deckId, cardId, folderName) {
+    const frontInput = document.getElementById(`front-${cardId}`);
+    const backInput = document.getElementById(`back-${cardId}`);
+    
+    if (!frontInput || !backInput) {
+      alert('❌ Erro: campos não encontrados.');
+      return;
+    }
+    
+    const newFront = frontInput.value.trim();
+    const newBack = backInput.value.trim();
+    
+    if (!newFront || !newBack) {
+      alert('⚠️ Preencha ambos os campos!');
+      return;
+    }
+    
+    this.showLoading(true);
+    
+    try {
+      // Encontrar o deck
+      const deck = this.decks.find(d => d.id === deckId);
+      if (!deck) {
+        throw new Error('Deck não encontrado');
+      }
+      
+      // Encontrar e atualizar o cartão
+      const cardIndex = deck.cards.findIndex(c => c.id === cardId);
+      if (cardIndex === -1) {
+        throw new Error('Cartão não encontrado');
+      }
+      
+      deck.cards[cardIndex].front = newFront;
+      deck.cards[cardIndex].back = newBack;
+      
+      // Salvar no Firebase
+      const deckDocRef = doc(db, 'users', this.user.uid, 'decks', deckId);
+      await updateDoc(deckDocRef, {
+        cards: deck.cards
+      });
+      
+      // Recarregar dados
+      await this.loadUserData();
+      
+      this.showLoading(false);
+      
+      alert('✅ Cartão atualizado com sucesso!');
+      
+      // Fechar e reabrir modal
+      this.closeFolderModal();
+      setTimeout(() => {
+        this.viewFolderCards(folderName);
+      }, 100);
+      
+    } catch (error) {
+      console.error('Erro ao salvar cartão:', error);
+      this.showLoading(false);
+      alert('❌ Erro ao salvar cartão: ' + error.message);
+    }
+  }
+
+  // ===== EXCLUIR CARTÃO =====
+  async deleteCard(deckId, cardId, folderName) {
+    if (!confirm('❌ Deseja realmente excluir este cartão?\n\nEsta ação não pode ser desfeita.')) {
+      return;
+    }
+    
+    this.showLoading(true);
+    
+    try {
+      // Encontrar o deck
+      const deck = this.decks.find(d => d.id === deckId);
+      if (!deck) {
+        throw new Error('Deck não encontrado');
+      }
+      
+      // Remover o cartão
+      deck.cards = deck.cards.filter(c => c.id !== cardId);
+      
+      // Salvar no Firebase
+      const deckDocRef = doc(db, 'users', this.user.uid, 'decks', deckId);
+      await updateDoc(deckDocRef, {
+        cards: deck.cards
+      });
+      
+      // Recarregar dados
+      await this.loadUserData();
+      
+      this.showLoading(false);
+      
+      alert('✅ Cartão excluído com sucesso!');
+      
+      // Fechar e reabrir modal
+      this.closeFolderModal();
+      setTimeout(() => {
+        this.viewFolderCards(folderName);
+      }, 100);
+      
+    } catch (error) {
+      console.error('Erro ao excluir cartão:', error);
+      this.showLoading(false);
+      alert('❌ Erro ao excluir cartão: ' + error.message);
+    }
+  }
+
+  // ===== EXCLUIR PASTA =====
+  async deleteFolder(folderId, folderName) {
+    const decksInFolder = this.decks.filter(d => d.folder === folderName);
+    
+    let confirmMessage = `❌ Deseja realmente excluir a pasta "${folderName}"?\n\n`;
+    
+    if (decksInFolder.length > 0) {
+      confirmMessage += `⚠️ ATENÇÃO: Esta pasta contém ${decksInFolder.length} deck(s)!\n\n`;
+      confirmMessage += `Os decks não serão excluídos, apenas ficarão sem pasta.\n\n`;
+      confirmMessage += `Tem certeza?`;
+    } else {
+      confirmMessage += `Esta ação não pode ser desfeita.`;
+    }
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+    
+    this.showLoading(true);
+    
+    try {
+      // Remover a pasta do Firebase
+      await deleteDoc(doc(db, 'users', this.user.uid, 'folders', folderId));
+      
+      // Atualizar decks que estavam nesta pasta (remover referência)
+      for (const deck of decksInFolder) {
+        const deckDocRef = doc(db, 'users', this.user.uid, 'decks', deck.id);
+        await updateDoc(deckDocRef, {
+          folder: ''
+        });
+      }
+      
+      // Recarregar dados
+      await this.loadUserData();
+      this.render();
+      this.showLoading(false);
+      
+      alert(`✅ Pasta "${folderName}" excluída com sucesso!`);
+      
+    } catch (error) {
+      console.error('Erro ao excluir pasta:', error);
+      this.showLoading(false);
+      alert('❌ Erro ao excluir pasta: ' + error.message);
+    }
   }
 
   // ===== FECHAR MODAL DE PASTA =====
@@ -841,7 +1198,8 @@ class FlashcardsApp {
     }
   }
 
-// ===== PARTE 7: SISTEMA DE ESTUDO (COM ÁUDIO) =====
+// ===== APP.JS - PARTE 6 DE 8 (COMPLETA E CORRIGIDA) =====
+// ===== SISTEMA DE ESTUDO (COM ÁUDIO) =====
 
   // ===== INICIAR ESTUDO =====
   startStudy(deckId) {
@@ -874,6 +1232,7 @@ class FlashcardsApp {
   }
 
   // ===== ATUALIZAR CARTÃO DE ESTUDO =====
+ // ===== ATUALIZAR CARTÃO DE ESTUDO =====
   updateStudyCard() {
     if (!this.currentDeck || !this.currentDeck.cards.length) return;
 
@@ -895,8 +1254,8 @@ class FlashcardsApp {
 
     // ===== MODO DIGITAÇÃO =====
     if (this.studyMode === 'typing' && !this.isFlipped) {
-      textEl.textContent = card.front; // Mostra PORTUGUÊS
-      hintEl.innerHTML = 'Digite a resposta em <strong>' + (this.currentDeck.folder || 'outro idioma') + '</strong> e pressione Enter';
+      textEl.textContent = card.front; // PORTUGUÊS
+      hintEl.textContent = 'Digite a resposta em ' + (this.currentDeck.folder || 'outro idioma') + ' e pressione Enter';
       typingInput.style.display = 'block';
       typingInput.focus();
       ratingButtons.style.display = 'none';
@@ -907,25 +1266,28 @@ class FlashcardsApp {
       typingInput.style.display = 'none';
       
       if (this.isFlipped) {
-        // VERSO: Mostra IDIOMA ESTRANGEIRO + BOTÃO DE ÁUDIO
+        // VERSO: Mostra IDIOMA ESTRANGEIRO + BOTÃO + DICA EMBAIXO
         textEl.textContent = card.back;
+        hintEl.textContent = 'Clique para avaliar sua resposta';
         ratingButtons.style.display = 'block';
         this.addAudioButton(card.back);
       } else {
-        // FRENTE: Mostra PORTUGUÊS
+        // FRENTE: Mostra PORTUGUÊS + SEM BOTÃO
         textEl.textContent = card.front;
+        hintEl.textContent = 'Clique para ver a resposta';
         ratingButtons.style.display = 'none';
         this.removeAudioButton();
       }
     }
   }
-
-  // ===== ADICIONAR BOTÃO DE ÁUDIO =====
+  
+  // ===== ADICIONAR BOTÃO DE ÁUDIO (CENTRALIZADO) =====
+// ===== ADICIONAR BOTÃO DE ÁUDIO =====
   addAudioButton(text) {
-    this.removeAudioButton(); // Remove se já existir
+    this.removeAudioButton();
 
-    const hintEl = document.getElementById('flashcardHint');
-    if (!hintEl) return;
+    const flashcardContent = document.querySelector('.flashcard-content');
+    if (!flashcardContent) return;
 
     const audioBtn = document.createElement('button');
     audioBtn.id = 'audioBtn';
@@ -937,7 +1299,8 @@ class FlashcardsApp {
       this.speakText(text);
     };
 
-    hintEl.appendChild(audioBtn);
+    // Adicionar no final (depois do texto)
+    flashcardContent.appendChild(audioBtn);
   }
 
   // ===== REMOVER BOTÃO DE ÁUDIO =====
@@ -1152,7 +1515,132 @@ class FlashcardsApp {
     }
   }
 
-// ===== PARTE 8 (FINAL): NOTIFICAÇÕES E EXPORTAR - VERSÃO CORRIGIDA =====
+// ===== FIM DA PARTE 6 CORRIGIDA - CONTINUE COM A PARTE 7 =====
+// ===== APP.JS - PARTE 7 DE 8 =====
+// ===== AVALIAÇÃO DE CARTÕES E NAVEGAÇÃO =====
+
+// ===== AVALIAR CARTÃO (CORRIGIDO) =====
+  async rateCard(rating) {
+    const card = this.currentDeck.cards[this.currentCardIndex];
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+
+    const originalDeck = this.decks.find(d => d.id === this.currentDeck.id);
+    const originalCard = originalDeck.cards.find(c => c.id === card.id);
+
+    originalCard.history.push({
+      date: now.toISOString(),
+      rating: rating
+    });
+
+    if (rating === 1) {
+      originalCard.level = 0;
+      originalCard.nextReview = new Date(now.getTime() + 60000).toISOString();
+      this.stats.totalWrong++;
+    } else if (rating === 2) {
+      originalCard.level = Math.max(0, (originalCard.level || 0));
+      originalCard.nextReview = new Date(now.getTime() + 600000).toISOString();
+      this.stats.totalCorrect++;
+    } else if (rating === 3) {
+      originalCard.level = (originalCard.level || 0) + 1;
+      const days = Math.pow(2, originalCard.level);
+      originalCard.nextReview = new Date(now.getTime() + days * 86400000).toISOString();
+      this.stats.totalCorrect++;
+    } else if (rating === 4) {
+      originalCard.level = (originalCard.level || 0) + 2;
+      const days = Math.pow(2, originalCard.level);
+      originalCard.nextReview = new Date(now.getTime() + days * 86400000).toISOString();
+      this.stats.totalCorrect++;
+    }
+
+    // CORRIGIDO: Incrementar contador diário
+    this.stats.studiedToday++;
+    
+    // CORRIGIDO: Atualizar data e sequência
+    const lastStudy = this.stats.lastStudyDate;
+    
+    if (!lastStudy || lastStudy !== today) {
+      // Primeiro card do dia
+      if (lastStudy) {
+        const lastDate = new Date(lastStudy + 'T00:00:00');
+        const todayDate = new Date(today + 'T00:00:00');
+        const diffDays = Math.floor((todayDate - lastDate) / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 1) {
+          // Estudou ontem - incrementa sequência
+          this.stats.streak++;
+          console.log('🔥 Sequência incrementada:', this.stats.streak);
+        } else if (diffDays > 1) {
+          // Quebrou a sequência - começa nova
+          this.stats.streak = 1;
+          console.log('🆕 Nova sequência iniciada');
+        }
+      } else {
+        // Primeiro estudo de todos
+        this.stats.streak = 1;
+        console.log('🎯 Primeira sequência!');
+      }
+      
+      this.stats.lastStudyDate = today;
+    }
+
+    try {
+      const deckDocRef = doc(db, 'users', this.user.uid, 'decks', this.currentDeck.id);
+      await updateDoc(deckDocRef, {
+        cards: originalDeck.cards
+      });
+      
+      await this.saveStats();
+      
+      // Atualizar dashboard em tempo real
+      this.renderDashboard();
+      
+    } catch (error) {
+      console.error('Erro ao salvar progresso:', error);
+    }
+
+    if (this.currentCardIndex < this.currentDeck.cards.length - 1) {
+      this.nextCard();
+    } else {
+      this.finishStudySession();
+    }
+  }
+
+  // ===== FINALIZAR SESSÃO =====
+  finishStudySession() {
+    const cardsStudied = this.currentDeck.cards.length;
+    const accuracy = Math.round((this.stats.totalCorrect / (this.stats.totalCorrect + this.stats.totalWrong)) * 100) || 0;
+    
+    alert(`🎉 Parabéns!\n\nSessão concluída!\n\n📊 Estatísticas:\n• ${cardsStudied} cartões\n• Acerto: ${accuracy}%\n• Sequência: ${this.stats.streak} dias`);
+    
+    this.showView('dashboard');
+    this.render();
+  }
+
+  // ===== PRÓXIMO/ANTERIOR CARTÃO =====
+  nextCard() {
+    if (this.currentCardIndex < this.currentDeck.cards.length - 1) {
+      this.currentCardIndex++;
+      this.isFlipped = false;
+      const typingInput = document.getElementById('typingInput');
+      if (typingInput) typingInput.value = '';
+      this.updateStudyCard();
+    }
+  }
+
+  previousCard() {
+    if (this.currentCardIndex > 0) {
+      this.currentCardIndex--;
+      this.isFlipped = false;
+      const typingInput = document.getElementById('typingInput');
+      if (typingInput) typingInput.value = '';
+      this.updateStudyCard();
+    }
+  }
+
+// ===== FIM DA PARTE 7 - CONTINUE COM A PARTE 8 =====
+// ===== APP.JS - PARTE 8 DE 8 (FINAL) =====
+// ===== NOTIFICAÇÕES E EXPORTAR =====
 
   // ===== SETUP DE NOTIFICAÇÕES - CORRIGIDO =====
   async setupNotifications() {
@@ -1217,8 +1705,17 @@ class FlashcardsApp {
   }
 
   // ===== ATIVAR NOTIFICAÇÕES =====
+  // ===== ATIVAR NOTIFICAÇÕES =====
   async enableNotifications() {
     try {
+      // Verificar HTTPS
+      if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+        alert('⚠️ Notificações requerem HTTPS.\n\nInstale o app para usar notificações.');
+        const notifToggle = document.getElementById('notificationToggle');
+        if (notifToggle) notifToggle.checked = false;
+        return;
+      }
+
       const permission = await Notification.requestPermission();
       
       if (permission === 'granted') {
@@ -1228,24 +1725,29 @@ class FlashcardsApp {
         this.scheduleNotifications();
         
         new Notification('🎉 Notificações Ativadas!', {
-          body: 'Você receberá lembretes para estudar seus flashcards',
+          body: 'Você receberá lembretes para estudar',
           icon: '/icon-192x192.png',
-          badge: '/icon-192x192.png'
+          badge: '/icon-192x192.png',
+          tag: 'notification-enabled',
+          requireInteraction: false
         });
         
-        console.log('✅ Notificações ativadas com sucesso');
-        console.log('⏰ Horários configurados:', this.settings.notificationTimes);
-        
-        alert('✅ Notificações ativadas com sucesso!');
+        console.log('✅ Notificações ativadas');
+        alert('✅ Notificações ativadas!\n\n💡 Dica: Instale o app para melhor experiência.');
+      } else if (permission === 'denied') {
+        alert('❌ Notificações bloqueadas.\n\nPara ativar:\n\n1. Clique no 🔒 ao lado da URL\n2. Ative "Notificações"\n3. Recarregue a página');
+        const notifToggle = document.getElementById('notificationToggle');
+        if (notifToggle) notifToggle.checked = false;
       } else {
         const notifToggle = document.getElementById('notificationToggle');
         if (notifToggle) notifToggle.checked = false;
-        alert('❌ Você precisa permitir notificações no navegador.');
+        alert('⚠️ Você precisa permitir notificações.');
       }
     } catch (error) {
-      console.error('Erro ao ativar notificações:', error);
+      console.error('Erro:', error);
       const notifToggle = document.getElementById('notificationToggle');
       if (notifToggle) notifToggle.checked = false;
+      alert('⚠️ Erro ao ativar notificações.\n\nTente instalar o aplicativo.');
     }
   }
 
@@ -1483,8 +1985,28 @@ class FlashcardsApp {
 
     input.click();
   }
-}
 
+  // ===== COMPARTILHAR CARD (PLACEHOLDER) =====
+  shareCard(deckId) {
+    alert('🔜 Funcionalidade de compartilhamento em desenvolvimento!\n\nEm breve você poderá compartilhar seus decks com outros usuários.');
+  }
+
+  // ===== COMPARTILHAR EXTERNO (PLACEHOLDER) =====
+  shareExternal(deckId) {
+    const deck = this.decks.find(d => d.id === deckId);
+    if (!deck) return;
+
+    if (navigator.share) {
+      navigator.share({
+        title: deck.name,
+        text: `Confira meu deck de flashcards: ${deck.name}\n${deck.cards?.length || 0} cartões para estudar!`,
+        url: window.location.href
+      }).catch(err => console.log('Erro ao compartilhar:', err));
+    } else {
+      alert('🔜 Compartilhamento externo em desenvolvimento!');
+    }
+  }
+}
 
 // ===== INICIALIZAÇÃO DO APP =====
 const app = new FlashcardsApp();
@@ -1492,5 +2014,4 @@ window.app = app;
 
 console.log('✅ Flashcards Pro iniciado com sucesso!');
 
-
-
+// ===== FIM DO ARQUIVO APP.JS =====

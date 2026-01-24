@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#6366f1">
   <title>Flashcards Pro</title>
   <link rel="stylesheet" href="css/app.css">
   <link rel="manifest" href="manifest.json">
@@ -160,12 +160,8 @@
 
         <div class="flashcard-container" id="flashcardContainer">
           <div class="flashcard-content">
+            <div class="flashcard-hint" id="flashcardHint"></div>
             <div class="flashcard-text" id="flashcardText">Selecione um card para começar</div>
-            <div class="flashcard-hint" id="flashcardHint">
-            </div>
-            <button class="audio-btn" id="audioBtn" style="display: none;" onclick="app.playCurrentAudio()">
-              🔊 Ouvir
-            </button>
             <input type="text" class="typing-input" id="typingInput" style="display: none;" placeholder="Digite sua resposta...">
           </div>
         </div>
@@ -312,6 +308,17 @@
       <div class="page-header">
         <h2>Configurações</h2>
         <p>Personalize sua experiência de estudo</p>
+        
+        <!-- Botão de Instalação PWA -->
+        <div id="installPrompt" style="display: none; margin-top: 1.5rem;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 12px; text-align: center;">
+            <h3 style="margin-bottom: 0.5rem;">📱 Instalar Aplicativo</h3>
+            <p style="margin-bottom: 1rem; opacity: 0.9;">Use como aplicativo nativo no seu dispositivo</p>
+            <button class="btn btn-primary" id="installButton" style="background: white; color: #764ba2;">
+              ⬇️ Instalar Agora
+            </button>
+          </div>
+        </div>
       </div>
 
       <div class="form-container">
@@ -404,6 +411,21 @@
   <!-- Firebase -->
   <script type="module" src="js/firebase-config.js"></script>
   <script type="module" src="js/app.js"></script>
+
+  <!-- Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(registration => {
+            console.log('✅ Service Worker registrado:', registration);
+          })
+          .catch(error => {
+            console.log('❌ Erro ao registrar Service Worker:', error);
+          });
+      });
+    }
+  </script>
 
 </body>
 </html>

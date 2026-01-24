@@ -1,28 +1,45 @@
-const CACHE_NAME = 'flashcards-musicais-v1';
+const CACHE_NAME = 'flashcards-pro-v2';
 const urlsToCache = [
-  './',
-  './index.html',
-  './app.css',
-  './app.js',
-  './manifest.json'
+  '/',
+  '/index.html',
+  '/login.html',
+  '/cadastro.html',
+  '/app.html',
+  '/css/app.css',
+  '/css/auth.css',
+  '/css/onboarding.css',
+  '/js/app.js',
+  '/js/auth.js',
+  '/js/onboarding.js',
+  '/js/firebase-config.js',
+  '/js/example-decks.js',
+  '/manifest.json',
+  '/icon-192x192.png',
+  '/icon-512x512.png'
 ];
 
-// Instalação do Service Worker
+// ===== INSTALL =====
 self.addEventListener('install', event => {
-  console.log('✅ Service Worker: Instalando...');
+  console.log('✅ SW: Instalando...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log('📦 Cache aberto');
         return cache.addAll(urlsToCache);
       })
-      .then(() => self.skipWaiting())
+      .then(() => {
+        console.log('✅ SW: Instalado!');
+        return self.skipWaiting();
+      })
+      .catch(error => {
+        console.error('❌ Erro ao instalar SW:', error);
+      })
   );
 });
 
-// Ativação do Service Worker
+// ===== ACTIVATE =====
 self.addEventListener('activate', event => {
-  console.log('✅ Service Worker: Ativando...');
+  console.log('✅ SW: Ativando...');
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
@@ -33,31 +50,41 @@ self.addEventListener('activate', event => {
           }
         })
       );
-    }).then(() => self.clients.claim())
+    })
+    .then(() => {
+      console.log('✅ SW: Ativado!');
+      return self.clients.claim();
+    })
   );
 });
 
-// Interceptação de requisições (offline-first)
+// ===== FETCH =====
 self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+  
+  // Sempre buscar do network para Firebase
+  if (url.hostname.includes('firebase') || 
+      url.hostname.includes('firestore') || 
+      url.hostname.includes('googleapis')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Cache first para recursos estáticos
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        // Cache hit - retorna a resposta do cache
         if (response) {
           return response;
         }
         
-        // Não está no cache - faz a requisição
         return fetch(event.request).then(response => {
-          // Verifica se a resposta é válida
           if (!response || response.status !== 200 || response.type !== 'basic') {
             return response;
           }
           
-          // Clona a resposta
           const responseToCache = response.clone();
           
-          // Adiciona ao cache
           caches.open(CACHE_NAME)
             .then(cache => {
               cache.put(event.request, responseToCache);
@@ -67,8 +94,50 @@ self.addEventListener('fetch', event => {
         });
       })
       .catch(() => {
-        // Se falhar, retorna uma página offline customizada (opcional)
-        return caches.match('./index.html');
+        return caches.match('/index.html');
       })
   );
 });
+
+// ===== PUSH NOTIFICATIONS =====
+self.addEventListener('push', event => {
+  console.log('📬 Push recebido:', event);
+  
+  const options = {
+    body: event.data ? event.data.text() : 'Hora de estudar!',
+    icon: '/icon-192x192.png',
+    badge: '/icon-192x192.png',
+    vibrate: [200, 100, 200],
+    tag: 'flashcard-notification',
+    requireInteraction: true,
+    actions: [
+      { action: 'study', title: '📖 Estudar Agora' },
+      { action: 'later', title: '⏰ Mais Tarde' }
+    ]
+  };
+  
+  event.waitUntil(
+    self.registration.showNotification('📚 Flashcards Pro', options)
+  );
+});
+
+// ===== NOTIFICATION CLICK =====
+self.addEventListener('notificationclick', event => {
+  console.log('🔔 Notificação clicada:', event.action);
+  
+  event.notification.close();
+  
+  if (event.action === 'study') {
+    event.waitUntil(
+      clients.openWindow('/app.html#study')
+    );
+  } else if (event.action === 'later') {
+    // Não faz nada
+  } else {
+    event.waitUntil(
+      clients.openWindow('/app.html')
+    );
+  }
+});
+
+console.log('✅ Service Worker carregado');

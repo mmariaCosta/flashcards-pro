@@ -1,17 +1,20 @@
 {
-  "name": "Flashcards Musicais",
+  "name": "Flashcards Pro - Aprenda Idiomas",
   "short_name": "Flashcards",
-  "description": "Aprenda idiomas com suas músicas favoritas",
-  "start_url": "./index.html",
+  "description": "Aprenda idiomas de forma inteligente com flashcards e repetição espaçada",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#b58df1",
-  "theme_color": "#9f7aea",
+  "background_color": "#f5f7fa",
+  "theme_color": "#6366f1",
   "orientation": "portrait-primary",
-  "scope": "./",
+  "categories": ["education", "productivity"],
+  "lang": "pt-BR",
+  "dir": "ltr",
   "icons": [
     {
-     "src": "icon-48x48.png",
-      "sizes": "72x72",
+      "src": "icon-48x48.png",
+      "sizes": "48x48",
       "type": "image/png",
       "purpose": "any"
     },
@@ -57,5 +60,22 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Estudar",
+      "short_name": "Estudar",
+      "description": "Começar sessão de estudos",
+      "url": "/app.html#study",
+      "icons": [{ "src": "icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Novo Card",
+      "short_name": "Novo",
+      "description": "Criar novo card",
+      "url": "/app.html#create",
+      "icons": [{ "src": "icon-96x96.png", "sizes": "96x96" }]
+    }
+  ],
+  "prefer_related_applications": false
 }

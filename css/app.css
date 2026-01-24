@@ -680,26 +680,56 @@ input:focus, select:focus, textarea:focus {
 .flashcard-content {
   text-align: center;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  min-height: 300px;
 }
 
 .flashcard-text {
   font-size: 2rem;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 1.5rem;
   line-height: 1.5;
-  min-height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   word-break: break-word;
   padding: 0 1rem;
+  order: 1;
+}
+
+.flashcard-audio {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.5rem;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-md);
+  order: 2;
+}
+
+.flashcard-audio:hover {
+  background: var(--accent-hover);
+  transform: scale(1.1);
+  box-shadow: var(--shadow-lg);
+}
+
+.flashcard-audio:active {
+  transform: scale(0.95);
 }
 
 .flashcard-hint {
   color: var(--text-muted);
   font-size: 0.95rem;
   font-weight: 500;
+  order: 3;
 }
 
 /* ===== AUDIO BUTTON ===== */
@@ -733,29 +763,6 @@ input:focus, select:focus, textarea:focus {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
-}
-
-.flashcard-audio {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  background: var(--accent);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 1.25rem;
-  margin-top: 1rem;
-  transition: all 0.2s;
-  box-shadow: var(--shadow-md);
-}
-
-.flashcard-audio:hover {
-  background: var(--accent-hover);
-  transform: scale(1.1);
-  box-shadow: var(--shadow-lg);
 }
 
 .typing-input {

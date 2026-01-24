@@ -3,6 +3,8 @@ import { auth, googleProvider, db } from './firebase-config.js';
 import { 
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { 
@@ -16,10 +18,25 @@ const loginForm = document.getElementById('loginForm');
 const googleLoginBtn = document.getElementById('googleLoginBtn');
 const loading = document.getElementById('loading');
 
+// ===== VERIFICAR REDIRECT DO GOOGLE =====
+checkRedirectResult();
+
+async function checkRedirectResult() {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result && result.user) {
+      showLoading(true);
+      await handleGoogleUser(result.user);
+    }
+  } catch (error) {
+    console.error('Erro no redirect:', error);
+    handleAuthError(error);
+  }
+}
+
 // ===== VERIFICAR SE JÁ ESTÁ LOGADO =====
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    // Usuário está logado, redirecionar para o app
     window.location.href = 'app.html';
   }
 });
@@ -41,7 +58,6 @@ if (loginForm) {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // onAuthStateChanged vai redirecionar automaticamente
     } catch (error) {
       showLoading(false);
       handleAuthError(error);
@@ -55,68 +71,89 @@ if (googleLoginBtn) {
     showLoading(true);
 
     try {
-      // Configurar o provedor do Google
       googleProvider.setCustomParameters({
         prompt: 'select_account'
       });
 
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-
-      // Verificar se é novo usuário
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-
-      if (!userDoc.exists()) {
-        // Criar perfil básico para novo usuário do Google
-        await setDoc(doc(db, 'users', user.uid), {
-          nome: user.displayName || 'Usuário',
-          email: user.email,
-          criadoEm: new Date().toISOString(),
-          idiomas: ['Inglês'], // Idioma padrão
-          objetivo: 'Estudar',
-          tempoDiario: 10,
-          metaDiaria: 10,
-          planoDeEstudos: {
-            titulo: 'Plano Básico',
-            idiomas: ['Inglês'],
-            recomendacoes: [
-              'Complete seu perfil nas configurações',
-              'Comece com 5-10 palavras por dia',
-              'Revise cards todos os dias'
-            ]
-          },
-          stats: {
-            studiedToday: 0,
-            totalCorrect: 0,
-            totalWrong: 0,
-            streak: 0,
-            lastStudyDate: null
-          },
-          settings: {
-            newCardsPerDay: 20,
-            reviewsPerDay: 100,
-            notificationsEnabled: false,
-            notificationTimes: ['09:00', '14:00', '19:00']
-          }
-        });
-      }
-
-      // Redirecionar para o app
-      window.location.href = 'app.html';
+      // Detectar se é mobile
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       
+      if (isMobile) {
+        console.log('📱 Mobile: usando signInWithRedirect');
+        await signInWithRedirect(auth, googleProvider);
+      } else {
+        console.log('💻 Desktop: usando signInWithPopup');
+        try {
+          const result = await signInWithPopup(auth, googleProvider);
+          await handleGoogleUser(result.user);
+        } catch (popupError) {
+          if (popupError.code === 'auth/popup-blocked') {
+            console.log('🚫 Popup bloqueado, usando redirect');
+            await signInWithRedirect(auth, googleProvider);
+          } else {
+            throw popupError;
+          }
+        }
+      }
     } catch (error) {
       showLoading(false);
       
-      // Não mostrar erro se usuário cancelou
       if (error.code === 'auth/popup-closed-by-user' || 
           error.code === 'auth/cancelled-popup-request') {
-        console.log('Login cancelado pelo usuário');
+        console.log('Login cancelado');
         return;
       }
       
       handleAuthError(error);
     }
   });
+}
+
+// ===== HANDLE GOOGLE USER =====
+async function handleGoogleUser(user) {
+  try {
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+
+    if (!userDoc.exists()) {
+      await setDoc(doc(db, 'users', user.uid), {
+        nome: user.displayName || 'Usuário',
+        email: user.email,
+        criadoEm: new Date().toISOString(),
+        idiomas: ['Inglês'],
+        objetivo: 'Estudar',
+        tempoDiario: 10,
+        metaDiaria: 10,
+        planoDeEstudos: {
+          titulo: 'Plano Básico',
+          idiomas: ['Inglês'],
+          recomendacoes: [
+            'Complete seu perfil nas configurações',
+            'Comece com 5-10 palavras por dia',
+            'Revise cards todos os dias'
+          ]
+        },
+        stats: {
+          studiedToday: 0,
+          totalCorrect: 0,
+          totalWrong: 0,
+          streak: 0,
+          lastStudyDate: null
+        },
+        settings: {
+          newCardsPerDay: 20,
+          reviewsPerDay: 100,
+          notificationsEnabled: false,
+          notificationTimes: ['09:00', '14:00', '19:00']
+        }
+      });
+    }
+
+    window.location.href = 'app.html';
+  } catch (error) {
+    showLoading(false);
+    console.error('Erro ao processar usuário:', error);
+    alert('Erro ao fazer login. Tente novamente.');
+  }
 }
 
 // ===== FUNÇÕES AUXILIARES =====
@@ -127,19 +164,15 @@ function showLoading(show) {
 }
 
 function showError(message) {
-  // Remove erro anterior se existir
   const existingError = document.querySelector('.error-message');
   if (existingError) existingError.remove();
 
-  // Cria novo erro
   const errorDiv = document.createElement('div');
   errorDiv.className = 'error-message';
   errorDiv.textContent = message;
   
   if (loginForm) {
     loginForm.insertBefore(errorDiv, loginForm.firstChild);
-    
-    // Remove após 5 segundos
     setTimeout(() => errorDiv.remove(), 5000);
   }
 }
@@ -151,31 +184,31 @@ function handleAuthError(error) {
 
   switch (error.code) {
     case 'auth/user-not-found':
-      message = 'Usuário não encontrado. Verifique o email.';
+      message = 'Usuário não encontrado.';
       break;
     case 'auth/wrong-password':
-      message = 'Senha incorreta. Tente novamente.';
+      message = 'Senha incorreta.';
       break;
     case 'auth/invalid-email':
       message = 'Email inválido.';
       break;
     case 'auth/user-disabled':
-      message = 'Esta conta foi desativada.';
+      message = 'Conta desativada.';
       break;
     case 'auth/too-many-requests':
-      message = 'Muitas tentativas. Aguarde alguns minutos.';
+      message = 'Muitas tentativas. Aguarde.';
       break;
     case 'auth/network-request-failed':
-      message = 'Erro de conexão. Verifique sua internet.';
+      message = 'Erro de conexão.';
       break;
     case 'auth/popup-blocked':
-      message = 'Pop-up bloqueado. Permita pop-ups para fazer login com Google.';
+      message = 'Permita pop-ups ou aguarde redirecionamento.';
       break;
     case 'auth/invalid-credential':
       message = 'Email ou senha incorretos.';
       break;
     case 'auth/account-exists-with-different-credential':
-      message = 'Já existe uma conta com este email usando outro método de login.';
+      message = 'Email já usado com outro método.';
       break;
   }
 
