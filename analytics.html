@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Análise de Estudos - Flashcards Pro</title>
+  <link rel="stylesheet" href="css/analytics.css">
+</head>
+<body>
+  <div class="container">
+    
+    <!-- Header -->
+    <div class="page-header">
+      <h1>📊 Análise de Estudos</h1>
+      <p>Acompanhe seu desempenho e progresso detalhado</p>
+    </div>
+
+    <!-- Status Cards -->
+    <div class="status-grid">
+      <div class="status-card above">
+        <div class="status-header">
+          <span class="status-icon">🔥</span>
+          <div class="status-info">
+            <h3>Dias Acima da Meta</h3>
+          </div>
+        </div>
+        <div class="status-value" id="daysAbove">12</div>
+        <div class="status-subtitle">Últimos 30 dias</div>
+      </div>
+
+      <div class="status-card average">
+        <div class="status-header">
+          <span class="status-icon">⚡</span>
+          <div class="status-info">
+            <h3>Dias na Média</h3>
+          </div>
+        </div>
+        <div class="status-value" id="daysAverage">10</div>
+        <div class="status-subtitle">Últimos 30 dias</div>
+      </div>
+
+      <div class="status-card below">
+        <div class="status-header">
+          <span class="status-icon">📉</span>
+          <div class="status-info">
+            <h3>Dias Abaixo da Meta</h3>
+          </div>
+        </div>
+        <div class="status-value" id="daysBelow">8</div>
+        <div class="status-subtitle">Últimos 30 dias</div>
+      </div>
+
+      <div class="status-card">
+        <div class="status-header">
+          <span class="status-icon">🎯</span>
+          <div class="status-info">
+            <h3>Meta Diária</h3>
+          </div>
+        </div>
+        <div class="status-value" id="dailyGoal">20</div>
+        <div class="status-subtitle">cartões por dia</div>
+      </div>
+    </div>
+
+    <!-- Bar Chart -->
+    <div class="chart-container">
+      <div class="chart-header">
+        <h2>Últimos 7 Dias</h2>
+        <div class="chart-controls">
+          <button class="chart-btn active" onclick="changeView('week')">7 dias</button>
+          <button class="chart-btn" onclick="changeView('month')">30 dias</button>
+        </div>
+      </div>
+
+      <div class="bar-chart" id="barChart">
+        <!-- Will be populated by JS -->
+      </div>
+
+      <div class="chart-legend">
+        <div class="legend-item">
+          <div class="legend-color above"></div>
+          <span class="legend-text">Acima da meta (>20 cartões)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color average"></div>
+          <span class="legend-text">Na média (15-20 cartões)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color below"></div>
+          <span class="legend-text">Abaixo da meta (<15 cartões)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress Rings -->
+    <div class="progress-section">
+      <div class="progress-card">
+        <div class="progress-ring">
+          <svg class="ring-svg" width="180" height="180">
+            <circle class="ring-background" cx="90" cy="90" r="80"/>
+            <circle class="ring-progress success" cx="90" cy="90" r="80" 
+                    stroke-dasharray="502.4" stroke-dashoffset="125.6"/>
+          </svg>
+          <div class="ring-text">75%</div>
+        </div>
+        <h3>Taxa de Conclusão</h3>
+        <p>Você completou 75% dos seus estudos planejados</p>
+      </div>
+
+      <div class="progress-card">
+        <div class="progress-ring">
+          <svg class="ring-svg" width="180" height="180">
+            <circle class="ring-background" cx="90" cy="90" r="80"/>
+            <circle class="ring-progress warning" cx="90" cy="90" r="80" 
+                    stroke-dasharray="502.4" stroke-dashoffset="150.72"/>
+          </svg>
+          <div class="ring-text">70%</div>
+        </div>
+        <h3>Consistência</h3>
+        <p>Você estudou em 21 dos últimos 30 dias</p>
+      </div>
+
+      <div class="progress-card">
+        <div class="progress-ring">
+          <svg class="ring-svg" width="180" height="180">
+            <circle class="ring-background" cx="90" cy="90" r="80"/>
+            <circle class="ring-progress success" cx="90" cy="90" r="80" 
+                    stroke-dasharray="502.4" stroke-dashoffset="100.48"/>
+          </svg>
+          <div class="ring-text">80%</div>
+        </div>
+        <h3>Acurácia</h3>
+        <p>Taxa de acerto nas revisões</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Firebase -->
+  <script type="module" src="js/firebase-config.js"></script>
+  <script type="module" src="js/analytics.js"></script>
+</body>
+</html>

@@ -2,6 +2,7 @@
 // ===== IMPORTAÇÕES E CONFIGURAÇÃO INICIAL =====
 import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { 
   doc, 
   getDoc, 
@@ -692,6 +693,33 @@ class FlashcardsApp {
       this.showLoading(false);
       alert('Erro ao criar deck. Tente novamente.');
     }
+    async function saveStudyToHistory(correct) {
+  if (!auth.currentUser) return;
+
+  const today = new Date().toISOString().split('T')[0];
+  const userRef = doc(db, 'users', auth.currentUser.uid);
+
+  try {
+    const userDoc = await getDoc(userRef);
+    const userData = userDoc.data();
+    const studyHistory = userData.studyHistory || {};
+
+    if (!studyHistory[today]) {
+      studyHistory[today] = { cards: 0, correct: 0, wrong: 0, date: today };
+    }
+
+    studyHistory[today].cards += 1;
+    if (correct) {
+      studyHistory[today].correct += 1;
+    } else {
+      studyHistory[today].wrong += 1;
+    }
+
+    await updateDoc(userRef, { studyHistory: studyHistory });
+  } catch (error) {
+    console.error('Erro ao salvar histórico:', error);
+  }
+}
   }
 
   // ===== LIMPAR FORMULÁRIO =====
@@ -1618,93 +1646,137 @@ class FlashcardsApp {
 // ===== FIM DA PARTE 6 CORRIGIDA - CONTINUE COM A PARTE 7 =====
 // ===== APP.JS - PARTE 7 DE 8 =====
 // ===== AVALIAÇÃO DE CARTÕES E NAVEGAÇÃO =====
+// ===== SALVAR HISTÓRICO DE ESTUDOS =====
+async saveStudyToHistory(correct) {
+  if (!this.user) return;
 
-// ===== AVALIAR CARTÃO (CORRIGIDO) =====
-  async rateCard(rating) {
-    const card = this.currentDeck.cards[this.currentCardIndex];
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const userRef = doc(db, 'users', this.user.uid);
 
-    const originalDeck = this.decks.find(d => d.id === this.currentDeck.id);
-    const originalCard = originalDeck.cards.find(c => c.id === card.id);
+  try {
+    const userDoc = await getDoc(userRef);
+    const userData = userDoc.data();
+    const studyHistory = userData.studyHistory || {};
 
-    originalCard.history.push({
-      date: now.toISOString(),
-      rating: rating
+    // Inicializa o dia se não existir
+    if (!studyHistory[today]) {
+      studyHistory[today] = {
+        cards: 0,
+        correct: 0,
+        wrong: 0,
+        date: today
+      };
+    }
+
+    // Atualiza os contadores
+    studyHistory[today].cards += 1;
+    if (correct) {
+      studyHistory[today].correct += 1;
+    } else {
+      studyHistory[today].wrong += 1;
+    }
+
+    // Salva no Firebase
+    await updateDoc(userRef, {
+      studyHistory: studyHistory
     });
 
-    if (rating === 1) {
-      originalCard.level = 0;
-      originalCard.nextReview = new Date(now.getTime() + 60000).toISOString();
-      this.stats.totalWrong++;
-    } else if (rating === 2) {
-      originalCard.level = Math.max(0, (originalCard.level || 0));
-      originalCard.nextReview = new Date(now.getTime() + 600000).toISOString();
-      this.stats.totalCorrect++;
-    } else if (rating === 3) {
-      originalCard.level = (originalCard.level || 0) + 1;
-      const days = Math.pow(2, originalCard.level);
-      originalCard.nextReview = new Date(now.getTime() + days * 86400000).toISOString();
-      this.stats.totalCorrect++;
-    } else if (rating === 4) {
-      originalCard.level = (originalCard.level || 0) + 2;
-      const days = Math.pow(2, originalCard.level);
-      originalCard.nextReview = new Date(now.getTime() + days * 86400000).toISOString();
-      this.stats.totalCorrect++;
-    }
-
-    // CORRIGIDO: Incrementar contador diário
-    this.stats.studiedToday++;
-    
-    // CORRIGIDO: Atualizar data e sequência
-    const lastStudy = this.stats.lastStudyDate;
-    
-    if (!lastStudy || lastStudy !== today) {
-      // Primeiro card do dia
-      if (lastStudy) {
-        const lastDate = new Date(lastStudy + 'T00:00:00');
-        const todayDate = new Date(today + 'T00:00:00');
-        const diffDays = Math.floor((todayDate - lastDate) / (1000 * 60 * 60 * 24));
-        
-        if (diffDays === 1) {
-          // Estudou ontem - incrementa sequência
-          this.stats.streak++;
-          console.log('🔥 Sequência incrementada:', this.stats.streak);
-        } else if (diffDays > 1) {
-          // Quebrou a sequência - começa nova
-          this.stats.streak = 1;
-          console.log('🆕 Nova sequência iniciada');
-        }
-      } else {
-        // Primeiro estudo de todos
-        this.stats.streak = 1;
-        console.log('🎯 Primeira sequência!');
-      }
-      
-      this.stats.lastStudyDate = today;
-    }
-
-    try {
-      const deckDocRef = doc(db, 'users', this.user.uid, 'decks', this.currentDeck.id);
-      await updateDoc(deckDocRef, {
-        cards: originalDeck.cards
-      });
-      
-      await this.saveStats();
-      
-      // Atualizar dashboard em tempo real
-      this.renderDashboard();
-      
-    } catch (error) {
-      console.error('Erro ao salvar progresso:', error);
-    }
-
-    if (this.currentCardIndex < this.currentDeck.cards.length - 1) {
-      this.nextCard();
-    } else {
-      this.finishStudySession();
-    }
+    console.log('✅ Histórico atualizado:', studyHistory[today]);
+  } catch (error) {
+    console.error('Erro ao salvar histórico:', error);
   }
+}
+// ===== AVALIAR CARTÃO (CORRIGIDO) =====
+ async rateCard(rating) {
+  const card = this.currentDeck.cards[this.currentCardIndex];
+  const now = new Date();
+  
+  // ⭐ Salvar histórico - AQUI na ordem certa
+  const wasCorrect = rating >= 3;
+  await this.saveStudyToHistory(wasCorrect);
+
+  const originalDeck = this.decks.find(d => d.id === this.currentDeck.id);
+  const today = now.toISOString().split('T')[0];
+
+  const originalCard = originalDeck.cards.find(c => c.id === card.id);
+
+  originalCard.history.push({
+    date: now.toISOString(),
+    rating: rating
+  });
+
+  if (rating === 1) {
+    originalCard.level = 0;
+    originalCard.nextReview = new Date(now.getTime() + 60000).toISOString();
+    this.stats.totalWrong++;
+  } else if (rating === 2) {
+    originalCard.level = Math.max(0, (originalCard.level || 0));
+    originalCard.nextReview = new Date(now.getTime() + 600000).toISOString();
+    this.stats.totalCorrect++;
+  } else if (rating === 3) {
+    originalCard.level = (originalCard.level || 0) + 1;
+    const days = Math.pow(2, originalCard.level);
+    originalCard.nextReview = new Date(now.getTime() + days * 86400000).toISOString();
+    this.stats.totalCorrect++;
+  } else if (rating === 4) {
+    originalCard.level = (originalCard.level || 0) + 2;
+    const days = Math.pow(2, originalCard.level);
+    originalCard.nextReview = new Date(now.getTime() + days * 86400000).toISOString();
+    this.stats.totalCorrect++;
+  }
+
+  // CORRIGIDO: Incrementar contador diário
+  this.stats.studiedToday++;
+  
+  // CORRIGIDO: Atualizar data e sequência
+  const lastStudy = this.stats.lastStudyDate;
+  
+  if (!lastStudy || lastStudy !== today) {
+    // Primeiro card do dia
+    if (lastStudy) {
+      const lastDate = new Date(lastStudy + 'T00:00:00');
+      const todayDate = new Date(today + 'T00:00:00');
+      const diffDays = Math.floor((todayDate - lastDate) / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 1) {
+        // Estudou ontem - incrementa sequência
+        this.stats.streak++;
+        console.log('🔥 Sequência incrementada:', this.stats.streak);
+      } else if (diffDays > 1) {
+        // Quebrou a sequência - começa nova
+        this.stats.streak = 1;
+        console.log('🆕 Nova sequência iniciada');
+      }
+    } else {
+      // Primeiro estudo de todos
+      this.stats.streak = 1;
+      console.log('🎯 Primeira sequência!');
+    }
+    
+    this.stats.lastStudyDate = today;
+  }
+
+  try {
+    const deckDocRef = doc(db, 'users', this.user.uid, 'decks', this.currentDeck.id);
+    await updateDoc(deckDocRef, {
+      cards: originalDeck.cards
+    });
+    
+    await this.saveStats();
+    
+    // Atualizar dashboard em tempo real
+    this.renderDashboard();
+    
+  } catch (error) {
+    console.error('Erro ao salvar progresso:', error);
+  }
+
+  if (this.currentCardIndex < this.currentDeck.cards.length - 1) {
+    this.nextCard();
+  } else {
+    this.finishStudySession();
+  }
+}
 
   // ===== FINALIZAR SESSÃO =====
   finishStudySession() {
