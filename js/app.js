@@ -622,6 +622,7 @@ class FlashcardsApp {
   async saveDeck() {
     const name = document.getElementById('deckName').value.trim();
     const desc = document.getElementById('deckDesc').value.trim();
+    const deckLanguage = document.getElementById('deckLanguage').value.trim();
     const folderSelect = document.getElementById('deckFolder').value;
     const newFolderName = document.getElementById('newFolderName').value.trim();
     const cardsText = document.getElementById('deckCards').value.trim();
@@ -671,6 +672,7 @@ class FlashcardsApp {
         name: name,
         description: desc,
         folder: folderName,
+        language: deckLanguage || folderName,
         cards: cards,
         createdAt: new Date().toISOString()
       };
@@ -791,6 +793,7 @@ class FlashcardsApp {
         name: exampleDeck.name,
         description: exampleDeck.description,
         folder: exampleDeck.language,
+        language: languageName,
         cards: cards,
         createdAt: new Date().toISOString()
       };
@@ -1200,6 +1203,10 @@ class FlashcardsApp {
 
 // ===== APP.JS - PARTE 6 DE 8 (COMPLETA E CORRIGIDA) =====
 // ===== SISTEMA DE ESTUDO (COM ÁUDIO) =====
+// ===== PARTE 6: PASTAS E COMPARTILHAMENTO =====
+
+  // ===== APP.JS - PARTE 6 DE 8 (COMPLETA) =====
+// ===== SISTEMA DE ESTUDO (COM ÁUDIO PREMIUM) =====
 
   // ===== INICIAR ESTUDO =====
   startStudy(deckId) {
@@ -1232,7 +1239,6 @@ class FlashcardsApp {
   }
 
   // ===== ATUALIZAR CARTÃO DE ESTUDO =====
- // ===== ATUALIZAR CARTÃO DE ESTUDO =====
   updateStudyCard() {
     if (!this.currentDeck || !this.currentDeck.cards.length) return;
 
@@ -1254,8 +1260,8 @@ class FlashcardsApp {
 
     // ===== MODO DIGITAÇÃO =====
     if (this.studyMode === 'typing' && !this.isFlipped) {
-      textEl.textContent = card.front; // PORTUGUÊS
-      hintEl.textContent = 'Digite a resposta em ' + (this.currentDeck.folder || 'outro idioma') + ' e pressione Enter';
+      textEl.textContent = card.front; // Mostra PORTUGUÊS
+      hintEl.innerHTML = 'Digite a resposta em <strong>' + (this.currentDeck.folder || 'outro idioma') + '</strong> e pressione Enter';
       typingInput.style.display = 'block';
       typingInput.focus();
       ratingButtons.style.display = 'none';
@@ -1266,28 +1272,25 @@ class FlashcardsApp {
       typingInput.style.display = 'none';
       
       if (this.isFlipped) {
-        // VERSO: Mostra IDIOMA ESTRANGEIRO + BOTÃO + DICA EMBAIXO
+        // VERSO: Mostra IDIOMA ESTRANGEIRO + BOTÃO DE ÁUDIO
         textEl.textContent = card.back;
-        hintEl.textContent = 'Clique para avaliar sua resposta';
         ratingButtons.style.display = 'block';
         this.addAudioButton(card.back);
       } else {
-        // FRENTE: Mostra PORTUGUÊS + SEM BOTÃO
+        // FRENTE: Mostra PORTUGUÊS
         textEl.textContent = card.front;
-        hintEl.textContent = 'Clique para ver a resposta';
         ratingButtons.style.display = 'none';
         this.removeAudioButton();
       }
     }
   }
-  
-  // ===== ADICIONAR BOTÃO DE ÁUDIO (CENTRALIZADO) =====
-// ===== ADICIONAR BOTÃO DE ÁUDIO =====
-  addAudioButton(text) {
-    this.removeAudioButton();
 
-    const flashcardContent = document.querySelector('.flashcard-content');
-    if (!flashcardContent) return;
+  // ===== ADICIONAR BOTÃO DE ÁUDIO =====
+  addAudioButton(text) {
+    this.removeAudioButton(); // Remove se já existir
+
+    const hintEl = document.getElementById('flashcardHint');
+    if (!hintEl) return;
 
     const audioBtn = document.createElement('button');
     audioBtn.id = 'audioBtn';
@@ -1299,8 +1302,7 @@ class FlashcardsApp {
       this.speakText(text);
     };
 
-    // Adicionar no final (depois do texto)
-    flashcardContent.appendChild(audioBtn);
+    hintEl.appendChild(audioBtn);
   }
 
   // ===== REMOVER BOTÃO DE ÁUDIO =====
@@ -1311,7 +1313,8 @@ class FlashcardsApp {
     }
   }
 
-  // ===== FALAR TEXTO (TEXT-TO-SPEECH) =====
+  // ===== FALAR TEXTO (TEXT-TO-SPEECH) - VERSÃO PREMIUM =====
+
   speakText(text) {
     if (!this.speechSynthesis) {
       alert('⚠️ Seu navegador não suporta síntese de voz.');
@@ -1322,18 +1325,36 @@ class FlashcardsApp {
 
     const utterance = new SpeechSynthesisUtterance(text);
     
-    // Detectar idioma baseado na pasta do deck
-    const folderName = this.currentDeck.folder || '';
-    utterance.lang = this.getLanguageCode(folderName);
-    utterance.rate = 0.9; // Velocidade um pouco mais lenta
+    // Detectar idioma baseado na pasta do deck ou no campo language
+    const folderName = this.currentDeck.language || this.currentDeck.folder || '';
+    const langCode = this.getLanguageCode(folderName);
+    
+    utterance.lang = langCode;
+    utterance.rate = 0.85; // Velocidade um pouco mais lenta para melhor compreensão
     utterance.pitch = 1;
+    utterance.volume = 1;
+
+    // Tentar selecionar uma voz nativa do idioma
+    const voices = this.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(voice => voice.lang.startsWith(langCode.split('-')[0]));
+    
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+      console.log(`🎤 Voz selecionada: ${preferredVoice.name} (${preferredVoice.lang})`);
+    } else {
+      console.warn(`⚠️ Nenhuma voz nativa encontrada para ${langCode}`);
+    }
 
     this.speechSynthesis.speak(utterance);
+    
+    console.log(`🔊 Reproduzindo áudio: "${text}" em ${folderName} (${langCode})`);
   }
 
   // ===== OBTER CÓDIGO DO IDIOMA =====
+// ===== OBTER CÓDIGO DO IDIOMA =====
   getLanguageCode(folderName) {
     const languageMap = {
+      // Idiomas populares
       'Inglês': 'en-US',
       'Espanhol': 'es-ES',
       'Francês': 'fr-FR',
@@ -1344,10 +1365,175 @@ class FlashcardsApp {
       'Chinês': 'zh-CN',
       'Russo': 'ru-RU',
       'Árabe': 'ar-SA',
+      'Hindi': 'hi-IN',
+      'Turco': 'tr-TR',
+      'Holandês': 'nl-NL',
+      'Sueco': 'sv-SE',
+      'Norueguês': 'no-NO',
+      'Dinamarquês': 'da-DK',
+      'Finlandês': 'fi-FI',
+      'Polonês': 'pl-PL',
+      'Grego': 'el-GR',
+      'Hebraico': 'he-IL',
+      'Tailandês': 'th-TH',
+      'Vietnamita': 'vi-VN',
+      'Indonésio': 'id-ID',
+      'Malaio': 'ms-MY',
+      'Tagalo': 'tl-PH',
+      'Ucraniano': 'uk-UA',
+      'Tcheco': 'cs-CZ',
+      'Húngaro': 'hu-HU',
+      'Romeno': 'ro-RO',
+      'Búlgaro': 'bg-BG',
+      'Croata': 'hr-HR',
+      'Sérvio': 'sr-RS',
+      'Catalão': 'ca-ES',
+      'Persa': 'fa-IR',
+      'Swahili': 'sw-KE',
+      'Africâner': 'af-ZA',
+      'Bengali': 'bn-BD',
+      'Urdu': 'ur-PK',
       'Português': 'pt-BR'
     };
 
-    return languageMap[folderName] || 'en-US';
+    // Buscar o idioma no mapa
+    const langCode = languageMap[folderName];
+    
+    if (langCode) {
+      console.log(`🔊 Idioma detectado: ${folderName} -> ${langCode}`);
+      return langCode;
+    }
+    
+    // Se não encontrar, tentar buscar parcialmente
+    const folderLower = folderName.toLowerCase();
+    for (const [key, value] of Object.entries(languageMap)) {
+      if (key.toLowerCase().includes(folderLower) || folderLower.includes(key.toLowerCase())) {
+        console.log(`🔊 Idioma detectado (parcial): ${folderName} -> ${value}`);
+        return value;
+      }
+    }
+    
+    // Fallback para inglês se não encontrar
+    console.warn(`⚠️ Idioma não reconhecido: ${folderName}, usando inglês como padrão`);
+    return 'en-US';
+  }
+
+  // ===== CONFIGURAÇÕES OTIMIZADAS POR IDIOMA =====
+  getLanguageSettings(folderName) {
+    const settings = {
+      'Inglês': { rate: 0.85, pitch: 1.0 },
+      'Espanhol': { rate: 0.80, pitch: 1.0 },
+      'Francês': { rate: 0.80, pitch: 1.0 },
+      'Italiano': { rate: 0.85, pitch: 1.0 },
+      'Alemão': { rate: 0.75, pitch: 0.95 },
+      'Japonês': { rate: 0.75, pitch: 1.15 },
+      'Coreano': { rate: 0.80, pitch: 1.1 },
+      'Chinês': { rate: 0.75, pitch: 1.15 },
+      'Russo': { rate: 0.80, pitch: 0.95 },
+      'Árabe': { rate: 0.75, pitch: 1.0 },
+      'Português': { rate: 0.85, pitch: 1.0 },
+      'Holandês': { rate: 0.85, pitch: 1.0 },
+      'Sueco': { rate: 0.85, pitch: 1.05 },
+      'Norueguês': { rate: 0.85, pitch: 1.05 },
+      'Dinamarquês': { rate: 0.85, pitch: 1.05 },
+      'Finlandês': { rate: 0.80, pitch: 1.0 },
+      'Polonês': { rate: 0.80, pitch: 1.0 },
+      'Turco': { rate: 0.80, pitch: 1.0 },
+      'Hindi': { rate: 0.80, pitch: 1.1 },
+      'Tailandês': { rate: 0.75, pitch: 1.15 },
+      'Vietnamita': { rate: 0.80, pitch: 1.1 },
+      'Grego': { rate: 0.80, pitch: 1.0 },
+      'Hebraico': { rate: 0.80, pitch: 1.0 },
+      'Tcheco': { rate: 0.80, pitch: 1.0 },
+      'Húngaro': { rate: 0.80, pitch: 1.0 },
+      'Romeno': { rate: 0.80, pitch: 1.0 },
+      'Búlgaro': { rate: 0.80, pitch: 1.0 }
+    };
+
+    return settings[folderName] || { rate: 0.85, pitch: 1.0 };
+  }
+
+  // ===== SELECIONAR MELHOR VOZ (ALGORITMO MELHORADO) =====
+  getBestVoiceForLanguage(voices, langCode, folderName) {
+    if (!voices || voices.length === 0) {
+      console.warn('⚠️ Nenhuma voz disponível no sistema');
+      return null;
+    }
+
+    const langPrefix = langCode.substring(0, 2);
+    
+    // 1. Filtrar vozes do idioma
+    let matchingVoices = voices.filter(v => v.lang.startsWith(langPrefix));
+    
+    if (matchingVoices.length === 0) {
+      console.warn(`⚠️ Nenhuma voz encontrada para ${langPrefix}`);
+      return null;
+    }
+
+    console.log(`🔍 ${matchingVoices.length} vozes encontradas para ${folderName}`);
+
+    // 2. Prioridade: Vozes Google (melhor qualidade)
+    let googleVoices = matchingVoices.filter(v => 
+      v.name.toLowerCase().includes('google') || 
+      v.name.includes('(Google)')
+    );
+    
+    if (googleVoices.length > 0) {
+      console.log('✅ Usando voz Google');
+      return googleVoices[0];
+    }
+
+    // 3. Prioridade: Vozes Microsoft
+    let microsoftVoices = matchingVoices.filter(v => 
+      v.name.toLowerCase().includes('microsoft') ||
+      v.name.includes('Microsoft')
+    );
+    
+    if (microsoftVoices.length > 0) {
+      console.log('✅ Usando voz Microsoft');
+      return microsoftVoices[0];
+    }
+
+    // 4. Preferências específicas por idioma
+    const preferences = {
+      'es': ['Helena', 'Paulina', 'Monica', 'Jorge', 'Diego'],
+      'fr': ['Julie', 'Thomas', 'Amelie', 'Celine'],
+      'it': ['Elsa', 'Alice', 'Luca', 'Cosimo'],
+      'de': ['Hedda', 'Anna', 'Hans', 'Markus'],
+      'ja': ['Haruka', 'Kyoko', 'Otoya'],
+      'ko': ['Yuna', 'Heami'],
+      'zh': ['Huihui', 'Ting-Ting', 'Yaoyao'],
+      'ru': ['Irina', 'Milena', 'Yuri'],
+      'ar': ['Hoda', 'Maged', 'Laila'],
+      'pt': ['Luciana', 'Heloisa', 'Daniel']
+    };
+
+    const prefList = preferences[langPrefix] || [];
+    for (const pref of prefList) {
+      const voice = matchingVoices.find(v => v.name.includes(pref));
+      if (voice) {
+        console.log(`✅ Usando voz preferida: ${voice.name}`);
+        return voice;
+      }
+    }
+
+    // 5. Vozes locais do idioma exato
+    const exactVoices = matchingVoices.filter(v => v.lang === langCode && v.localService);
+    if (exactVoices.length > 0) {
+      console.log('✅ Usando voz local do sistema');
+      return exactVoices[0];
+    }
+
+    // 6. Qualquer voz do idioma exato
+    const exactMatch = matchingVoices.find(v => v.lang === langCode);
+    if (exactMatch) {
+      console.log('✅ Usando voz do idioma exato');
+      return exactMatch;
+    }
+
+    // 7. Primeira voz disponível do idioma
+    console.log('⚠️ Usando primeira voz disponível');
+    return matchingVoices[0];
   }
 
   // ===== VIRAR CARTÃO =====
@@ -1427,92 +1613,6 @@ class FlashcardsApp {
     }
 
     return matrix[str2.length][str1.length];
-  }
-
-  // ===== AVALIAR CARTÃO =====
-  async rateCard(rating) {
-    const card = this.currentDeck.cards[this.currentCardIndex];
-    const now = new Date();
-
-    const originalDeck = this.decks.find(d => d.id === this.currentDeck.id);
-    const originalCard = originalDeck.cards.find(c => c.id === card.id);
-
-    originalCard.history.push({
-      date: now.toISOString(),
-      rating: rating
-    });
-
-    if (rating === 1) {
-      originalCard.level = 0;
-      originalCard.nextReview = new Date(now.getTime() + 60000).toISOString();
-      this.stats.totalWrong++;
-    } else if (rating === 2) {
-      originalCard.level = Math.max(0, (originalCard.level || 0));
-      originalCard.nextReview = new Date(now.getTime() + 600000).toISOString();
-      this.stats.totalCorrect++;
-    } else if (rating === 3) {
-      originalCard.level = (originalCard.level || 0) + 1;
-      const days = Math.pow(2, originalCard.level);
-      originalCard.nextReview = new Date(now.getTime() + days * 86400000).toISOString();
-      this.stats.totalCorrect++;
-    } else if (rating === 4) {
-      originalCard.level = (originalCard.level || 0) + 2;
-      const days = Math.pow(2, originalCard.level);
-      originalCard.nextReview = new Date(now.getTime() + days * 86400000).toISOString();
-      this.stats.totalCorrect++;
-    }
-
-    this.stats.studiedToday++;
-    this.stats.lastStudyDate = now.toISOString().split('T')[0];
-
-    try {
-      const deckDocRef = doc(db, 'users', this.user.uid, 'decks', this.currentDeck.id);
-      await updateDoc(deckDocRef, {
-        cards: originalDeck.cards
-      });
-      
-      await this.saveStats();
-    } catch (error) {
-      console.error('Erro ao salvar progresso:', error);
-    }
-
-    if (this.currentCardIndex < this.currentDeck.cards.length - 1) {
-      this.nextCard();
-    } else {
-      this.finishStudySession();
-    }
-  }
-
-  // ===== FINALIZAR SESSÃO =====
-  finishStudySession() {
-    const cardsStudied = this.currentDeck.cards.length;
-    const accuracy = Math.round((this.stats.totalCorrect / (this.stats.totalCorrect + this.stats.totalWrong)) * 100) || 0;
-    
-    alert(`🎉 Parabéns!\n\nSessão concluída!\n\n📊 Estatísticas:\n• ${cardsStudied} cartões\n• Acerto: ${accuracy}%\n• Sequência: ${this.stats.streak} dias`);
-    
-    this.showView('dashboard');
-    this.render();
-  }
-
-  // ===== PRÓXIMO/ANTERIOR CARTÃO =====
-  nextCard() {
-    if (this.currentCardIndex < this.currentDeck.cards.length - 1) {
-      this.currentCardIndex++;
-      this.isFlipped = false;
-      const typingInput = document.getElementById('typingInput');
-      if (typingInput) typingInput.value = '';
-      this.updateStudyCard();
-    }
-  }
-
-  previousCard() {
-    if (this.currentCardIndex > 0) {
-      this.currentCardIndex--;
-      this.isFlipped = false;
-      const typingInput = document.getElementById('typingInput');
-      if (typingInput) typingInput.value = '';
-      this.updateStudyCard();
-    }
   }
 
 // ===== FIM DA PARTE 6 CORRIGIDA - CONTINUE COM A PARTE 7 =====
