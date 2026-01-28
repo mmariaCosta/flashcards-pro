@@ -1,458 +1,192 @@
-// ===== FIREBASE IMPORTS =====
-import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import { getFirestore, doc, getDoc, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+// analytics.js - Análise real baseada em dados do Firestore
 
-// ===== FIREBASE INITIALIZATION =====
-const auth = getAuth();
+import { auth } from './firebase-config.js';
+import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
 const db = getFirestore();
 
-// ===== GLOBAL STATE =====
+// Variáveis globais
 let currentView = 'week';
-let currentUser = null;
-let userGoal = 20;
+let userGoal = 20; // fallback
+let studyHistory = {}; // { "YYYY-MM-DD": {cards: N, correct: N, wrong: N} }
 
-// ===== HELPER FUNCTIONS =====
-
-/**
- * Gets a date string for N days ago
- * @param {number} daysAgo - Number of days in the past (negative) or future (positive)
- * @returns {string} - Date string in YYYY-MM-DD format
- */
+// Helpers
 function getDateString(daysAgo) {
   const date = new Date();
   date.setDate(date.getDate() + daysAgo);
   return date.toISOString().split('T')[0];
 }
 
-/**
- * Gets the day name in Portuguese
- * @param {string} dateStr - Date string in YYYY-MM-DD format
- * @returns {string} - Day name (Seg, Ter, etc)
- */
 function getDayName(dateStr) {
   const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  const date = new Date(dateStr + 'T00:00:00');
+  const date = new Date(dateStr);
   return days[date.getDay()];
 }
 
-/**
- * Generates sample data for 30 days
- * @returns {Array} - Array of day objects
- */
-function generateSampleMonthData() {
-  const data = [];
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    const day = date.getDate().toString().padStart(2, '0');
-    const cards = Math.floor(Math.random() * 20) + 10; // 10-30 cards
-    data.push({
-      day: day,
-      cards: cards,
-      goal: 20,
-      date: getDateString(-i)
-    });
-  }
-  return data;
-}
-
-// ===== SAMPLE DATA (FALLBACK) =====
-const sampleWeekData = [
-  { day: 'Seg', cards: 25, goal: 20, date: getDateString(-6) },
-  { day: 'Ter', cards: 18, goal: 20, date: getDateString(-5) },
-  { day: 'Qua', cards: 22, goal: 20, date: getDateString(-4) },
-  { day: 'Qui', cards: 12, goal: 20, date: getDateString(-3) },
-  { day: 'Sex', cards: 28, goal: 20, date: getDateString(-2) },
-  { day: 'Sáb', cards: 15, goal: 20, date: getDateString(-1) },
-  { day: 'Dom', cards: 20, goal: 20, date: getDateString(0) }
-];
-
-const sampleMonthData = generateSampleMonthData();
-
-/**
- * Determines the class for a bar based on cards studied vs goal
- * @param {number} cards - Number of cards studied
- * @param {number} goal - Daily goal
- * @returns {string} - CSS class name
- */
 function getBarClass(cards, goal) {
   if (cards > goal) return 'above';
   if (cards >= goal * 0.75) return 'average';
   return 'below';
 }
 
-/**
- * Renders the bar chart with the provided data
- * @param {Array} data - Array of day objects with cards and goal
- */
-function renderChart(data) {
-  const chartContainer = document.getElementById('barChart');
-  if (!chartContainer) {
-    console.error('Elemento barChart não encontrado');
-    return;
-  }
-  
-  chartContainer.innerHTML = '';
+// Carregar dados reais do usuário
+async function loadUserData() {
+  return new Promise((resolve) => {
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
 
-  if (!data || data.length === 0) {
-    chartContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 2rem;">Nenhum dado disponível</p>';
-    return;
-  }
-
-  const maxCards = Math.max(...data.map(d => d.cards), userGoal);
-
-  data.forEach(item => {
-    // Create bar item container
-    const barItem = document.createElement('div');
-    barItem.className = 'bar-item';
-
-    // Create bar
-    const bar = document.createElement('div');
-    bar.className = `bar ${getBarClass(item.cards, item.goal)}`;
-    const height = Math.max((item.cards / maxCards) * 100, 5); // Minimum 5% height
-    bar.style.height = `${height}%`;
-
-    // Add tooltip with date
-    bar.title = `${item.date}: ${item.cards} cartões`;
-
-    // Create bar value label
-    const barValue = document.createElement('div');
-    barValue.className = 'bar-value';
-    barValue.textContent = item.cards;
-    bar.appendChild(barValue);
-
-    // Create day label
-    const label = document.createElement('div');
-    label.className = 'bar-label';
-    label.textContent = item.day;
-
-    // Append elements
-    barItem.appendChild(bar);
-    barItem.appendChild(label);
-    chartContainer.appendChild(barItem);
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          studyHistory = data.studyHistory || {};
+          userGoal = data.settings?.newCardsPerDay || data.metaDiaria || 20;
+          document.getElementById('dailyGoal').textContent = userGoal;
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      } else {
+        resolve(false);
+      }
+    });
   });
 }
 
-/**
- * Changes the chart view between week and month
- * @param {string} view - 'week' or 'month'
- * @param {Event} e - Click event object
- */
-async function changeView(view, e) {
-  currentView = view;
-
-  // Update button states
-  document.querySelectorAll('.chart-btn').forEach(btn => {
-    btn.classList.remove('active');
-  });
-  
-  // BUG FIX: Usar o evento passado como parâmetro ao invés de 'event' global
-  if (e && e.target) {
-    e.target.classList.add('active');
-  }
-
-  // Update chart header title
-  const chartHeader = document.querySelector('.chart-header h2');
-  if (chartHeader) {
-    chartHeader.textContent = view === 'week' ? 'Últimos 7 Dias' : 'Últimos 30 Dias';
-  }
-
-  // Load and render appropriate data
-  await loadChartData(view);
+// Verificar se tem dados suficientes (pelo menos 1 dia)
+function hasEnoughData(history) {
+  return Object.keys(history).length > 0;
 }
 
-/**
- * Calculates statistics from data
- * @param {Array} data - Array of day objects
- * @returns {Object} - Statistics object
- */
-function calculateStats(data) {
-  const goal = userGoal;
-  let above = 0;
-  let average = 0;
-  let below = 0;
-  let totalCards = 0;
-  let totalCorrect = 0;
-  let totalWrong = 0;
-  let daysStudied = 0;
-
-  data.forEach(item => {
-    if (item.cards > 0) daysStudied++;
-    totalCards += item.cards;
-
-    if (item.cards > goal) {
-      above++;
-    } else if (item.cards >= goal * 0.75) {
-      average++;
-    } else if (item.cards > 0) {
-      below++;
-    }
-
-    // Add correct/wrong if available
-    if (item.correct) totalCorrect += item.correct;
-    if (item.wrong) totalWrong += item.wrong;
-  });
-
-  const accuracy = totalCorrect + totalWrong > 0 
-    ? Math.round((totalCorrect / (totalCorrect + totalWrong)) * 100) 
-    : 0;
-
-  const completionRate = Math.round((daysStudied / data.length) * 100);
-  const consistency = Math.round((daysStudied / 30) * 100); // Based on 30 days
-
-  return { 
-    above, 
-    average, 
-    below, 
-    goal,
-    accuracy,
-    completionRate,
-    consistency,
-    daysStudied,
-    totalCards
-  };
-}
-
-/**
- * Updates the status cards with calculated statistics
- * @param {Object} stats - Statistics object
- */
-function updateStatusCards(stats) {
-  // BUG FIX: Adicionar verificação se elementos existem
-  const daysAboveEl = document.getElementById('daysAbove');
-  const daysAverageEl = document.getElementById('daysAverage');
-  const daysBelowEl = document.getElementById('daysBelow');
-  const dailyGoalEl = document.getElementById('dailyGoal');
-
-  if (daysAboveEl) daysAboveEl.textContent = stats.above;
-  if (daysAverageEl) daysAverageEl.textContent = stats.average;
-  if (daysBelowEl) daysBelowEl.textContent = stats.below;
-  if (dailyGoalEl) dailyGoalEl.textContent = stats.goal;
-
-  // Update progress rings - BUG FIX: Usar IDs ao invés de nth-child
-  updateProgressRing('#completionRing', stats.completionRate, 'success');
-  updateProgressRing('#consistencyRing', stats.consistency, 'warning');
-  updateProgressRing('#accuracyRing', stats.accuracy, 'success');
-
-  // Update ring text - BUG FIX: Usar IDs específicos
-  const completionText = document.getElementById('completionText');
-  const consistencyText = document.getElementById('consistencyText');
-  const accuracyText = document.getElementById('accuracyText');
-
-  if (completionText) completionText.textContent = `${stats.completionRate}%`;
-  if (consistencyText) consistencyText.textContent = `${stats.consistency}%`;
-  if (accuracyText) accuracyText.textContent = `${stats.accuracy}%`;
-
-  // Update descriptions - BUG FIX: Usar IDs específicos
-  const completionDesc = document.getElementById('completionDesc');
-  const consistencyDesc = document.getElementById('consistencyDesc');
-
-  if (completionDesc) {
-    completionDesc.textContent = `Você completou ${stats.completionRate}% dos seus estudos planejados`;
-  }
-  if (consistencyDesc) {
-    consistencyDesc.textContent = `Você estudou em ${stats.daysStudied} dos últimos 30 dias`;
-  }
-}
-
-/**
- * Updates a progress ring
- * @param {string} selector - CSS selector for the ring
- * @param {number} percentage - Percentage to display
- * @param {string} colorClass - Color class (success, warning, danger)
- */
-function updateProgressRing(selector, percentage, colorClass) {
-  const ring = document.querySelector(selector);
-  if (!ring) {
-    console.warn(`Elemento ${selector} não encontrado`);
-    return;
-  }
-
-  const circumference = 502.4; // 2 * PI * 80
-  const offset = circumference - (percentage / 100) * circumference;
-  
-  ring.style.strokeDashoffset = offset;
-  ring.className = `ring-progress ${colorClass}`;
-}
-
-/**
- * Animates progress rings on page load
- */
-function animateProgressRings() {
-  document.querySelectorAll('.ring-progress').forEach(ring => {
-    const offset = ring.style.strokeDashoffset;
-    ring.style.strokeDashoffset = '502.4';
-    setTimeout(() => {
-      ring.style.strokeDashoffset = offset;
-    }, 100);
-  });
-}
-
-/**
- * Loads user's study history from Firebase
- * @returns {Object|null} - Study history object or null
- */
-async function loadStudyHistory() {
-  if (!currentUser) return null;
-
-  try {
-    const userRef = doc(db, 'users', currentUser.uid);
-    const userDoc = await getDoc(userRef);
-
-    if (userDoc.exists()) {
-      const userData = userDoc.data();
-      userGoal = userData.settings?.newCardsPerDay || 20;
-      return userData.studyHistory || null;
-    }
-  } catch (error) {
-    console.error('Erro ao carregar histórico:', error);
-  }
-
-  return null;
-}
-
-/**
- * Generates data array from study history
- * @param {Object} history - Study history object
- * @param {number} days - Number of days to include
- * @returns {Array} - Array of day objects
- */
+// Gerar dados para o gráfico a partir do histórico real
 function generateDataFromHistory(history, days) {
   const data = [];
-  
   for (let i = days - 1; i >= 0; i--) {
-    const dateStr = getDateString(-i);
-    const dayData = history[dateStr] || { cards: 0, correct: 0, wrong: 0 };
-    
+    const date = getDateString(-i);
+    const dayData = history[date] || { cards: 0 };
     data.push({
-      day: days === 7 ? getDayName(dateStr) : new Date(dateStr + 'T00:00:00').getDate().toString().padStart(2, '0'),
+      day: getDayName(date),
       cards: dayData.cards || 0,
-      correct: dayData.correct || 0,
-      wrong: dayData.wrong || 0,
       goal: userGoal,
-      date: dateStr
+      date: date
     });
   }
-
   return data;
 }
 
-/**
- * Checks if user has enough study history
- * @param {Object} history - Study history object
- * @returns {boolean} - True if has enough data
- */
-function hasEnoughData(history) {
-  if (!history) return false;
-  
-  const entries = Object.keys(history).length;
-  return entries >= 3; // At least 3 days of data
+// Calcular estatísticas para status cards e rings (baseado em 30 dias)
+function calculateStats(data) {
+  let above = 0, average = 0, below = 0;
+  let totalStudied = 0, totalCorrect = 0;
+  let daysStudied = 0;
+
+  data.forEach(item => {
+    const cards = item.cards;
+    totalStudied += cards;
+    // Nota: como studyHistory tem correct/wrong por dia, somamos
+    const dayData = studyHistory[item.date] || {};
+    totalCorrect += dayData.correct || 0;
+
+    if (cards > 0) daysStudied++;
+
+    if (cards > userGoal) above++;
+    else if (cards >= userGoal * 0.75) average++;
+    else below++;
+  });
+
+  const accuracy = totalStudied > 0 ? Math.round((totalCorrect / totalStudied) * 100) : 0;
+  const completion = data.length > 0 ? Math.round((above / data.length) * 100) : 0;
+  const consistency = data.length > 0 ? Math.round((daysStudied / data.length) * 100) : 0;
+
+  return { above, average, below, accuracy, completion, consistency };
 }
 
-/**
- * Shows info message about sample data
- */
-function showSampleDataInfo() {
-  const infoDiv = document.createElement('div');
-  infoDiv.className = 'info-banner';
-  infoDiv.innerHTML = `
-    <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
-      <span style="font-size: 1.5rem;">ℹ️</span>
-      <div>
-        <strong style="color: #856404;">Dados de Exemplo</strong>
-        <p style="margin: 0.25rem 0 0 0; color: #856404; font-size: 0.875rem;">
-          Você ainda não tem histórico suficiente. Continue estudando para ver seus dados reais aqui!
-        </p>
-      </div>
-    </div>
-  `;
-  
-  const container = document.querySelector('.container');
-  const header = document.querySelector('.page-header');
-  
-  // Remove existing banner if any
-  const existingBanner = document.querySelector('.info-banner');
-  if (existingBanner) existingBanner.remove();
-  
-  // BUG FIX: Verificar se container e header existem
-  if (container && header) {
-    container.insertBefore(infoDiv, header.nextSibling);
-  }
+// Atualizar status cards
+function updateStatusCards(stats) {
+  document.getElementById('daysAbove').textContent = stats.above;
+  document.getElementById('daysAverage').textContent = stats.average;
+  document.getElementById('daysBelow').textContent = stats.above + stats.average + stats.below - stats.above - stats.average; // below = total - above - average
+  document.getElementById('dailyGoal').textContent = userGoal;
+
+  // Progress rings
+  const completionOffset = 502.4 * (1 - stats.completion / 100);
+  document.getElementById('completionRing').style.strokeDashoffset = completionOffset;
+  document.getElementById('completionPercent').textContent = stats.completion + '%';
+  document.getElementById('completionDesc').textContent = `Você completou ${stats.completion}% dos estudos planejados`;
+
+  const consistencyOffset = 502.4 * (1 - stats.consistency / 100);
+  document.getElementById('consistencyRing').style.strokeDashoffset = consistencyOffset;
+  document.getElementById('consistencyPercent').textContent = stats.consistency + '%';
+  document.getElementById('consistencyDesc').textContent = `Você estudou em ${stats.consistency}% dos dias`;
+
+  const accuracyOffset = 502.4 * (1 - stats.accuracy / 100);
+  document.getElementById('accuracyRing').style.strokeDashoffset = accuracyOffset;
+  document.getElementById('accuracyPercent').textContent = stats.accuracy + '%';
+  document.getElementById('accuracyDesc').textContent = `Taxa de acerto: ${stats.accuracy}%`;
 }
 
-/**
- * Removes the sample data info banner
- */
-function removeSampleDataInfo() {
-  const existingBanner = document.querySelector('.info-banner');
-  if (existingBanner) existingBanner.remove();
-}
+// Renderizar gráfico de barras
+function renderChart(data) {
+  const container = document.getElementById('barChart');
+  container.innerHTML = '';
 
-/**
- * Loads and displays chart data
- * @param {string} view - 'week' or 'month'
- */
-async function loadChartData(view) {
-  const days = view === 'week' ? 7 : 30;
-  const history = await loadStudyHistory();
+  data.forEach(item => {
+    const barWrapper = document.createElement('div');
+    barWrapper.className = 'bar-wrapper';
 
-  let data;
-  let stats;
+    const bar = document.createElement('div');
+    bar.className = `bar ${getBarClass(item.cards, item.goal)}`;
+    const heightPercent = Math.min((item.cards / (item.goal * 1.5)) * 100, 100); // max 150% da meta
+    bar.style.height = `${heightPercent}%`;
 
-  if (hasEnoughData(history)) {
-    // Use real data
-    data = generateDataFromHistory(history, days);
-    const monthData = generateDataFromHistory(history, 30);
-    stats = calculateStats(monthData);
-    removeSampleDataInfo();
-  } else {
-    // Use sample data
-    data = view === 'week' ? sampleWeekData : sampleMonthData;
-    stats = calculateStats(sampleMonthData);
-    showSampleDataInfo();
-  }
+    const label = document.createElement('span');
+    label.className = 'bar-label';
+    label.textContent = item.day;
 
-  renderChart(data);
-  updateStatusCards(stats);
-  animateProgressRings();
-}
+    const value = document.createElement('span');
+    value.className = 'bar-value';
+    value.textContent = item.cards;
 
-/**
- * Initializes the analytics page
- */
-async function initAnalytics() {
-  // Wait for auth state
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      currentUser = user;
-      await loadChartData('week');
-    } else {
-      // Not logged in - show sample data
-      renderChart(sampleWeekData);
-      const stats = calculateStats(sampleMonthData);
-      updateStatusCards(stats);
-      showSampleDataInfo();
-      animateProgressRings();
-    }
+    barWrapper.appendChild(bar);
+    barWrapper.appendChild(value);
+    barWrapper.appendChild(label);
+    container.appendChild(barWrapper);
   });
 }
 
-// ===== MAKE FUNCTIONS GLOBAL FOR HTML ONCLICK =====
-window.changeView = changeView;
+// Mudar visualização (7/30 dias)
+window.changeView = function(view) {
+  currentView = view;
+  document.querySelectorAll('.chart-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelector(`.chart-btn[onclick="changeView('${view}')"]`).classList.add('active');
 
-// ===== INITIALIZATION =====
+  document.querySelector('.chart-header h2').textContent = view === 'week' ? 'Últimos 7 Dias' : 'Últimos 30 Dias';
+  loadAndRender();
+};
+
+// Carregar e renderizar
+async function loadAndRender() {
+  document.getElementById('loadingOverlay').style.display = 'flex';
+
+  const hasData = await loadUserData();
+  const days = currentView === 'week' ? 7 : 30;
+  const data = generateDataFromHistory(studyHistory, days);
+  const stats = calculateStats(generateDataFromHistory(studyHistory, 30));
+
+  renderChart(data);
+  updateStatusCards(stats);
+
+  document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+// Inicialização
+async function initAnalytics() {
+  await loadAndRender();
+}
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initAnalytics);
 } else {
   initAnalytics();
 }
-
-// ===== EXPORT FOR EXTERNAL USE =====
-export {
-  renderChart,
-  changeView,
-  calculateStats,
-  updateStatusCards,
-  loadStudyHistory,
-  initAnalytics
-};

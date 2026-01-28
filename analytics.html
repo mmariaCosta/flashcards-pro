@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Análise de Estudos - Flashcards Pro</title>
-  <link rel="stylesheet" href="css/analytics.css">
+  <link rel="stylesheet" href="css/analytics.css"> <!-- Mantenha seu CSS ou adicione estilos abaixo se precisar -->
 </head>
 <body>
   <div class="container">
@@ -15,8 +15,16 @@
       <p>Acompanhe seu desempenho e progresso detalhado</p>
     </div>
 
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" style="display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+      <div style="background: white; padding: 2rem; border-radius: 12px; text-align: center;">
+        <div class="spinner" style="width: 40px; height: 40px; border: 5px solid #f3f3f3; border-top: 5px solid var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+        <p style="margin-top: 1rem;">Carregando sua análise...</p>
+      </div>
+    </div>
+
     <!-- Status Cards -->
-    <div class="status-grid">
+    <div class="status-grid" id="statusGrid">
       <div class="status-card above">
         <div class="status-header">
           <span class="status-icon">🔥</span>
@@ -24,7 +32,7 @@
             <h3>Dias Acima da Meta</h3>
           </div>
         </div>
-        <div class="status-value" id="daysAbove">12</div>
+        <div class="status-value" id="daysAbove">0</div>
         <div class="status-subtitle">Últimos 30 dias</div>
       </div>
 
@@ -35,7 +43,7 @@
             <h3>Dias na Média</h3>
           </div>
         </div>
-        <div class="status-value" id="daysAverage">10</div>
+        <div class="status-value" id="daysAverage">0</div>
         <div class="status-subtitle">Últimos 30 dias</div>
       </div>
 
@@ -46,7 +54,7 @@
             <h3>Dias Abaixo da Meta</h3>
           </div>
         </div>
-        <div class="status-value" id="daysBelow">8</div>
+        <div class="status-value" id="daysBelow">0</div>
         <div class="status-subtitle">Últimos 30 dias</div>
       </div>
 
@@ -67,27 +75,25 @@
       <div class="chart-header">
         <h2>Últimos 7 Dias</h2>
         <div class="chart-controls">
-          <button class="chart-btn active" onclick="changeView('week', event)">7 dias</button>
-          <button class="chart-btn" onclick="changeView('month', event)">30 dias</button>
+          <button class="chart-btn active" onclick="changeView('week')">7 dias</button>
+          <button class="chart-btn" onclick="changeView('month')">30 dias</button>
         </div>
       </div>
 
-      <div class="bar-chart" id="barChart">
-        <!-- Will be populated by JS -->
-      </div>
+      <div class="bar-chart" id="barChart"></div>
 
       <div class="chart-legend">
         <div class="legend-item">
           <div class="legend-color above"></div>
-          <span class="legend-text">Acima da meta (>20 cartões)</span>
+          <span>Acima da meta</span>
         </div>
         <div class="legend-item">
           <div class="legend-color average"></div>
-          <span class="legend-text">Na média (15-20 cartões)</span>
+          <span>Na média</span>
         </div>
         <div class="legend-item">
           <div class="legend-color below"></div>
-          <span class="legend-text">Abaixo da meta (<15 cartões)</span>
+          <span>Abaixo da meta</span>
         </div>
       </div>
     </div>
@@ -98,39 +104,36 @@
         <div class="progress-ring">
           <svg class="ring-svg" width="180" height="180">
             <circle class="ring-background" cx="90" cy="90" r="80"/>
-            <circle id="completionRing" class="ring-progress success" cx="90" cy="90" r="80" 
-                    stroke-dasharray="502.4" stroke-dashoffset="125.6"/>
+            <circle id="completionRing" class="ring-progress success" cx="90" cy="90" r="80" stroke-dasharray="502.4" stroke-dashoffset="502.4"/>
           </svg>
-          <div class="ring-text" id="completionText">75%</div>
+          <div class="ring-text" id="completionPercent">0%</div>
         </div>
         <h3>Taxa de Conclusão</h3>
-        <p id="completionDesc">Você completou 75% dos seus estudos planejados</p>
+        <p id="completionDesc">Você completou 0% dos estudos planejados</p>
       </div>
 
       <div class="progress-card">
         <div class="progress-ring">
           <svg class="ring-svg" width="180" height="180">
             <circle class="ring-background" cx="90" cy="90" r="80"/>
-            <circle id="consistencyRing" class="ring-progress warning" cx="90" cy="90" r="80" 
-                    stroke-dasharray="502.4" stroke-dashoffset="150.72"/>
+            <circle id="consistencyRing" class="ring-progress warning" cx="90" cy="90" r="80" stroke-dasharray="502.4" stroke-dashoffset="502.4"/>
           </svg>
-          <div class="ring-text" id="consistencyText">70%</div>
+          <div class="ring-text" id="consistencyPercent">0%</div>
         </div>
         <h3>Consistência</h3>
-        <p id="consistencyDesc">Você estudou em 21 dos últimos 30 dias</p>
+        <p id="consistencyDesc">Você estudou em 0 dos últimos 30 dias</p>
       </div>
 
       <div class="progress-card">
         <div class="progress-ring">
           <svg class="ring-svg" width="180" height="180">
             <circle class="ring-background" cx="90" cy="90" r="80"/>
-            <circle id="accuracyRing" class="ring-progress success" cx="90" cy="90" r="80" 
-                    stroke-dasharray="502.4" stroke-dashoffset="100.48"/>
+            <circle id="accuracyRing" class="ring-progress success" cx="90" cy="90" r="80" stroke-dasharray="502.4" stroke-dashoffset="502.4"/>
           </svg>
-          <div class="ring-text" id="accuracyText">80%</div>
+          <div class="ring-text" id="accuracyPercent">0%</div>
         </div>
         <h3>Acurácia</h3>
-        <p>Taxa de acerto nas revisões</p>
+        <p id="accuracyDesc">Taxa de acerto nas revisões</p>
       </div>
     </div>
 
