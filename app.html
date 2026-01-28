@@ -81,59 +81,93 @@
     
     <!-- DASHBOARD -->
     <section id="dashboard" class="view active">
-      <div class="page-header">
-        <h2>Dashboard</h2>
-        <p>Acompanhe seu progresso de aprendizado</p>
+  <div class="page-header">
+    <h2>Dashboard</h2>
+    <p>Acompanhe seu progresso real de aprendizado</p>
+  </div>
+
+  <!-- Plano Personalizado -->
+  <div class="plan-card" id="planCard">
+    <h3>🎯 Seu Plano Personalizado</h3>
+    <div id="planContent">
+      <p>Carregando seu plano...</p>
+    </div>
+  </div>
+
+  <!-- Cards de Estatísticas -->
+  <div class="stats-grid">
+    <!-- Cartões estudados hoje -->
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-title">Hoje</div>
       </div>
+      <div class="stat-value" id="statToday">0</div>
+      <div class="stat-change">cartões estudados</div>
+    </div>
 
-      <div class="plan-card" id="planCard">
-        <h3>🎯 Seu Plano Personalizado</h3>
-        <div id="planContent">
-          <p>Carregando seu plano...</p>
-        </div>
+    <!-- Sequência (streak) -->
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-title">Sequência</div>
       </div>
+      <div class="stat-value" id="statStreak">0</div>
+      <div class="stat-change">dias consecutivos 🔥</div>
+    </div>
 
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-header">
-            <div class="stat-title">Hoje</div>
-          </div>
-          <div class="stat-value" id="statToday">0</div>
-          <div class="stat-change">cartões estudados</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-header">
-            <div class="stat-title">Acertos</div>
-          </div>
-          <div class="stat-value" id="statAccuracy">0%</div>
-          <div class="stat-change">taxa de sucesso</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-header">
-            <div class="stat-title">Sequência</div>
-          </div>
-          <div class="stat-value" id="statStreak">0</div>
-          <div class="stat-change">dias consecutivos</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-header">
-            <div class="stat-title">Cards</div>
-          </div>
-          <div class="stat-value" id="statDecks">0</div>
-          <div class="stat-change" id="statCards">0 cartões</div>
-        </div>
+    <!-- Precisão Geral -->
+    <div class="stat-card highlight">
+      <div class="stat-header">
+        <div class="stat-title">Precisão Geral</div>
       </div>
+      <div class="stat-value" id="statAccuracy">0%</div>
+      <div class="stat-change">acertos totais</div>
+    </div>
 
-      <div class="page-header" style="margin-top: 2rem;">
-        <h2>Revisões Pendentes</h2>
-        <p>Cartões que precisam ser revisados hoje</p>
+    <!-- Total de Decks -->
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-title">Decks</div>
       </div>
+      <div class="stat-value" id="statDecks">0</div>
+      <div class="stat-change">criados</div>
+    </div>
 
-      <div id="reviewCards" class="cards-grid"></div>
-    </section>
+    <!-- Total de Cartões -->
+    <div class="stat-card">
+      <div class="stat-header">
+        <div class="stat-title">Cartões</div>
+      </div>
+      <div class="stat-value" id="statCards">0</div>
+      <div class="stat-change">no total</div>
+    </div>
+
+    <!-- Revisões Pendentes (opcional - pode remover se não quiser) -->
+    <div class="stat-card warning">
+      <div class="stat-header">
+        <div class="stat-title">Pendentes</div>
+      </div>
+      <div class="stat-value" id="statReviews">0</div>
+      <div class="stat-change">revisões hoje</div>
+    </div>
+  </div>
+
+  <!-- Análise Inteligente baseada nos seus estudos reais -->
+  <div class="analysis-card" style="margin-top: 2rem; padding: 1.5rem; background: white; border-radius: 12px; box-shadow: var(--shadow-md);">
+    <h3 style="margin-bottom: 1rem;">📊 Sua Análise Atual</h3>
+    <p id="analysisText" style="line-height: 1.6; color: var(--text-primary);">
+      Carregando análise dos seus estudos...
+    </p>
+  </div>
+
+  <!-- Revisões Pendentes - Lista de decks com cartões para revisar -->
+  <div style="margin-top: 2rem;">
+    <h3>Revisões Pendentes Hoje</h3>
+    <div id="reviewCards" class="cards-grid" style="margin-top: 1rem;">
+      <!-- Aqui serão renderizados os decks com cartões pendentes -->
+      <p>Carregando revisões...</p>
+    </div>
+  </div>
+</section>
 
     <!-- STUDY -->
     <section id="study" class="view">

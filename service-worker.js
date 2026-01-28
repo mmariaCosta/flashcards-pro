@@ -1,21 +1,22 @@
-const CACHE_NAME = 'flashcards-pro-v2';
+const CACHE_NAME = 'flashcards-pro-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/login.html',
-  '/cadastro.html',
-  '/app.html',
-  '/css/app.css',
-  '/css/auth.css',
-  '/css/onboarding.css',
-  '/js/app.js',
-  '/js/auth.js',
-  '/js/onboarding.js',
-  '/js/firebase-config.js',
-  '/js/example-decks.js',
-  '/manifest.json',
-  '/icon-192x192.png',
-  '/icon-512x512.png'
+  './',
+  './index.html',
+  './cadastro.html',
+  './login.html',
+  './app.html',
+  './css/onboarding.css',
+  './css/app.css',
+  './css/auth.css',
+  './js/firebase-config.js',
+  './js/onboarding.js',
+  './js/app.js',
+  './js/auth.js',
+  './manifest.json',
+  // ícones
+  './icon-192x192.png',
+  './icon-512x512.png',
+  // se tiver pasta assets ou css separada, incluir também
 ];
 
 // ===== INSTALL =====

@@ -96,12 +96,13 @@ function validateCurrentStep() {
       }
       break;
 
-    case 4: // Idiomas
-      const idiomas = document.querySelectorAll('input[name="idiomas"]:checked');
-      if (idiomas.length === 0) {
-        alert('⚠️ Selecione pelo menos um idioma');
+    case 4:
+      const checked = document.querySelectorAll('input[name="idiomas"]:checked');
+      if (checked.length === 0) {
+        alert('Selecione pelo menos um idioma para continuar.');
         return false;
       }
+      userData.idiomas = Array.from(checked).map(cb => cb.value);
       break;
 
     case 5: // Objetivo

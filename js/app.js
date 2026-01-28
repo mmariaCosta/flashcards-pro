@@ -1888,7 +1888,14 @@ async saveStudyToHistory(correct) {
         return;
       }
 
-      const permission = await Notification.requestPermission();
+      if (!("Notification" in window)) return;
+
+       const permission = await Notification.requestPermission();
+        if (permission === "granted") {
+         // pode criar notificação local
+         this.settings.notificationsEnabled = true;
+         // salvar no firestore
+      }
       
       if (permission === 'granted') {
         this.settings.notificationsEnabled = true;
