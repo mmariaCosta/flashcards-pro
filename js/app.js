@@ -46,23 +46,55 @@ class FlashcardsApp {
     this.init();
   }
 
-  async init() {
-    this.showLoading(true);
-    this.setupPWA();
+async init() {
+  console.log('=== DEBUG MODE ATIVADO ===');
+  console.log('Iniciando app...');
 
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        this.user = user;
+  this.showLoading(true);
+
+  this.setupPWA();
+
+  onAuthStateChanged(auth, async (user) => {
+    console.log('onAuthStateChanged → User:', user ? user.uid : 'NENHUM USUÁRIO LOGADO');
+
+    if (user) {
+      this.user = user;
+      console.log('Usuário logado! UID:', user.uid);
+
+      console.log('Iniciando loadUserData()...');
+      try {
         await this.loadUserData();
-        this.setupUI();
-        this.render();
-        this.showLoading(false);
-      } else {
-        window.location.href = 'login.html';
+        console.log('loadUserData() concluído com sucesso');
+      } catch (err) {
+        console.error('ERRO GRAVE EM loadUserData():', err);
+        alert('Erro ao carregar seus dados: ' + err.message);
       }
-    });
-  }
 
+      console.log('Configurando interface (setupUI)...');
+      try {
+        this.setupUI();
+        console.log('setupUI concluído');
+      } catch (err) {
+        console.error('ERRO EM setupUI():', err);
+      }
+
+      console.log('Renderizando tudo...');
+      this.render();
+
+      // FORÇAR EXIBIÇÃO MESMO SE ALGO TRAVAR
+      console.log('Forçando fim do loading em 5 segundos...');
+      setTimeout(() => {
+        this.showLoading(false);
+        console.log('Loading FORÇADO a encerrar');
+        this.showView('dashboard'); // força abrir dashboard
+      }, 5000);
+
+    } else {
+      console.log('Sem usuário → redirecionando para login');
+      window.location.href = 'login.html';
+    }
+  });
+}
   // ... continua na Parte 2
     // ============================================================================
   // LOADING e PWA
@@ -111,47 +143,72 @@ class FlashcardsApp {
   // CARREGAMENTO DE DADOS DO USUÁRIO
   // ============================================================================
   async loadUserData() {
-    try {
-      const userRef = doc(db, 'users', this.user.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (userSnap.exists()) {
-        this.userData = userSnap.data();
-        this.stats = this.userData.stats || this.stats;
-        this.settings = this.userData.settings || this.settings;
-
-        const nameEl = document.getElementById('userName');
-        if (nameEl) {
-          nameEl.textContent = this.userData.nome || this.user.email.split('@')[0];
-        }
-      } else {
-        // Cria perfil básico se não existir
-        await setDoc(userRef, {
-          nome: this.user.displayName || 'Usuário',
-          email: this.user.email,
-          criadoEm: serverTimestamp(),
-          stats: { ...this.stats },
-          settings: { ...this.settings }
-        });
-        this.userData = (await getDoc(userRef)).data();
-      }
-
-      // Decks
-      const decksSnap = await getDocs(collection(db, 'users', this.user.uid, 'decks'));
-      this.decks = decksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-      // Pastas
-      const foldersSnap = await getDocs(collection(db, 'users', this.user.uid, 'folders'));
-      this.folders = foldersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-      // Verifica e reseta stats diárias
-      await this.checkAndResetDailyStats();
-
-    } catch (error) {
-      console.error('Erro ao carregar dados do usuário:', error);
-      alert('Não foi possível carregar seus dados. Verifique sua conexão.');
-    }
+  console.log('=== loadUserData INICIADO ===');
+  if (!this.user || !this.user.uid) {
+    console.error('ERRO: Nenhum usuário autenticado no loadUserData');
+    alert('Você precisa estar logado para carregar os dados.');
+    this.showLoading(false);
+    return;
   }
+
+  console.log('UID do usuário:', this.user.uid);
+
+  try {
+    console.log('Buscando documento do usuário...');
+    const userRef = doc(db, 'users', this.user.uid);
+    const userSnap = await getDoc(userRef);
+
+    console.log('getDoc concluído. Exists?', userSnap.exists());
+
+    if (userSnap.exists()) {
+      console.log('Dados do usuário encontrados!');
+      this.userData = userSnap.data();
+      this.stats = this.userData.stats || this.stats;
+      this.settings = this.userData.settings || this.settings;
+
+      const nameEl = document.getElementById('userName');
+      if (nameEl) {
+        nameEl.textContent = this.userData.nome || this.user.email.split('@')[0];
+        console.log('Nome atualizado:', nameEl.textContent);
+      }
+    } else {
+      console.warn('Documento do usuário NÃO existe → criando perfil básico');
+      await setDoc(userRef, {
+        nome: this.user.displayName || 'Usuário',
+        email: this.user.email,
+        criadoEm: serverTimestamp(),
+        stats: { ...this.stats },
+        settings: { ...this.settings }
+      });
+      console.log('Perfil básico criado');
+      // Recarrega para pegar o novo doc
+      const newSnap = await getDoc(userRef);
+      this.userData = newSnap.data();
+    }
+
+    console.log('Carregando decks...');
+    const decksSnap = await getDocs(collection(db, 'users', this.user.uid, 'decks'));
+    this.decks = decksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    console.log('Decks carregados:', this.decks.length);
+
+    console.log('Carregando pastas...');
+    const foldersSnap = await getDocs(collection(db, 'users', this.user.uid, 'folders'));
+    this.folders = foldersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    console.log('Pastas carregadas:', this.folders.length);
+
+    console.log('Verificando stats diárias...');
+    await this.checkAndResetDailyStats();
+
+    console.log('=== loadUserData FINALIZADO COM SUCESSO ===');
+
+  } catch (error) {
+    console.error('ERRO GRAVE NO loadUserData:', error.code, error.message);
+    alert('Erro ao carregar seus dados:\n' + error.message + '\n\nVerifique o console para detalhes.');
+  } finally {
+    this.showLoading(false);
+    console.log('Loading finalizado (com ou sem erro)');
+  }
+}
 
   async checkAndResetDailyStats() {
     const today = new Date().toISOString().split('T')[0];

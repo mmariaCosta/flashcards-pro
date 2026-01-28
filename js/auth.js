@@ -1,47 +1,36 @@
-// ===== SISTEMA DE AUTENTICAÇÃO =====
-import { auth, googleProvider, db } from './firebase-config.js';
+// ===== FIREBASE IMPORTS =====
 import { 
+  getAuth, 
   signInWithEmailAndPassword,
   signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
+  GoogleAuthProvider,
   onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { 
+  getFirestore,
   doc, 
   getDoc, 
   setDoc 
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
-// ===== ELEMENTOS DO DOM =====
+// ===== FIREBASE INITIALIZATION =====
+const auth = getAuth();
+const db = getFirestore();
+const googleProvider = new GoogleAuthProvider();
+
+// ===== DOM ELEMENTS =====
 const loginForm = document.getElementById('loginForm');
 const googleLoginBtn = document.getElementById('googleLoginBtn');
 const loading = document.getElementById('loading');
 
-// ===== VERIFICAR REDIRECT DO GOOGLE =====
-checkRedirectResult();
-
-async function checkRedirectResult() {
-  try {
-    const result = await getRedirectResult(auth);
-    if (result && result.user) {
-      showLoading(true);
-      await handleGoogleUser(result.user);
-    }
-  } catch (error) {
-    console.error('Erro no redirect:', error);
-    handleAuthError(error);
-  }
-}
-
-// ===== VERIFICAR SE JÁ ESTÁ LOGADO =====
+// ===== CHECK IF ALREADY LOGGED IN =====
 onAuthStateChanged(auth, (user) => {
   if (user) {
     window.location.href = 'app.html';
   }
 });
 
-// ===== LOGIN COM EMAIL/SENHA =====
+// ===== EMAIL/PASSWORD LOGIN =====
 if (loginForm) {
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -58,6 +47,7 @@ if (loginForm) {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      // onAuthStateChanged will redirect
     } catch (error) {
       showLoading(false);
       handleAuthError(error);
@@ -65,7 +55,7 @@ if (loginForm) {
   });
 }
 
-// ===== LOGIN COM GOOGLE - CORRIGIDO =====
+// ===== GOOGLE LOGIN =====
 if (googleLoginBtn) {
   googleLoginBtn.addEventListener('click', async () => {
     showLoading(true);
@@ -75,26 +65,49 @@ if (googleLoginBtn) {
         prompt: 'select_account'
       });
 
-      // Detectar se é mobile
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      
-      if (isMobile) {
-        console.log('📱 Mobile: usando signInWithRedirect');
-        await signInWithRedirect(auth, googleProvider);
-      } else {
-        console.log('💻 Desktop: usando signInWithPopup');
-        try {
-          const result = await signInWithPopup(auth, googleProvider);
-          await handleGoogleUser(result.user);
-        } catch (popupError) {
-          if (popupError.code === 'auth/popup-blocked') {
-            console.log('🚫 Popup bloqueado, usando redirect');
-            await signInWithRedirect(auth, googleProvider);
-          } else {
-            throw popupError;
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      // Check if new user
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+
+      if (!userDoc.exists()) {
+        // Create basic profile for new Google user
+        await setDoc(doc(db, 'users', user.uid), {
+          nome: user.displayName || 'Usuário',
+          email: user.email,
+          criadoEm: new Date().toISOString(),
+          idiomas: ['Inglês'],
+          objetivo: 'Estudar',
+          tempoDiario: 10,
+          metaDiaria: 10,
+          planoDeEstudos: {
+            titulo: 'Plano Básico',
+            idiomas: ['Inglês'],
+            recomendacoes: [
+              'Complete seu perfil nas configurações',
+              'Comece com 5-10 palavras por dia',
+              'Revise cards todos os dias'
+            ]
+          },
+          stats: {
+            studiedToday: 0,
+            totalCorrect: 0,
+            totalWrong: 0,
+            streak: 0,
+            lastStudyDate: null
+          },
+          settings: {
+            newCardsPerDay: 20,
+            reviewsPerDay: 100,
+            notificationsEnabled: false,
+            notificationTimes: ['09:00', '14:00', '19:00']
           }
-        }
+        });
       }
+
+      window.location.href = 'app.html';
+      
     } catch (error) {
       showLoading(false);
       
@@ -109,60 +122,20 @@ if (googleLoginBtn) {
   });
 }
 
-// ===== HANDLE GOOGLE USER =====
-async function handleGoogleUser(user) {
-  try {
-    const userDoc = await getDoc(doc(db, 'users', user.uid));
+// ===== HELPER FUNCTIONS =====
 
-    if (!userDoc.exists()) {
-      await setDoc(doc(db, 'users', user.uid), {
-        nome: user.displayName || 'Usuário',
-        email: user.email,
-        criadoEm: new Date().toISOString(),
-        idiomas: ['Inglês'],
-        objetivo: 'Estudar',
-        tempoDiario: 10,
-        metaDiaria: 10,
-        planoDeEstudos: {
-          titulo: 'Plano Básico',
-          idiomas: ['Inglês'],
-          recomendacoes: [
-            'Complete seu perfil nas configurações',
-            'Comece com 5-10 palavras por dia',
-            'Revise cards todos os dias'
-          ]
-        },
-        stats: {
-          studiedToday: 0,
-          totalCorrect: 0,
-          totalWrong: 0,
-          streak: 0,
-          lastStudyDate: null
-        },
-        settings: {
-          newCardsPerDay: 20,
-          reviewsPerDay: 100,
-          notificationsEnabled: false,
-          notificationTimes: ['09:00', '14:00', '19:00']
-        }
-      });
-    }
-
-    window.location.href = 'app.html';
-  } catch (error) {
-    showLoading(false);
-    console.error('Erro ao processar usuário:', error);
-    alert('Erro ao fazer login. Tente novamente.');
-  }
-}
-
-// ===== FUNÇÕES AUXILIARES =====
+/**
+ * Show/hide loading overlay
+ */
 function showLoading(show) {
   if (loading) {
     loading.style.display = show ? 'flex' : 'none';
   }
 }
 
+/**
+ * Display error message
+ */
 function showError(message) {
   const existingError = document.querySelector('.error-message');
   if (existingError) existingError.remove();
@@ -177,40 +150,42 @@ function showError(message) {
   }
 }
 
+/**
+ * Handle authentication errors
+ */
 function handleAuthError(error) {
-  console.error('Erro de autenticação:', error);
+  console.error('Auth error:', error);
 
   let message = 'Erro ao fazer login. Tente novamente.';
 
   switch (error.code) {
     case 'auth/user-not-found':
-      message = 'Usuário não encontrado.';
+      message = 'Usuário não encontrado. Verifique o email.';
       break;
     case 'auth/wrong-password':
-      message = 'Senha incorreta.';
+      message = 'Senha incorreta. Tente novamente.';
       break;
     case 'auth/invalid-email':
       message = 'Email inválido.';
       break;
     case 'auth/user-disabled':
-      message = 'Conta desativada.';
+      message = 'Esta conta foi desativada.';
       break;
     case 'auth/too-many-requests':
-      message = 'Muitas tentativas. Aguarde.';
+      message = 'Muitas tentativas. Aguarde alguns minutos.';
       break;
     case 'auth/network-request-failed':
-      message = 'Erro de conexão.';
+      message = 'Erro de conexão. Verifique sua internet.';
       break;
     case 'auth/popup-blocked':
-      message = 'Permita pop-ups ou aguarde redirecionamento.';
+      message = 'Pop-up bloqueado. Permita pop-ups para login com Google.';
       break;
     case 'auth/invalid-credential':
       message = 'Email ou senha incorretos.';
-      break;
-    case 'auth/account-exists-with-different-credential':
-      message = 'Email já usado com outro método.';
       break;
   }
 
   showError(message);
 }
+
+console.log('✅ Auth module carregado com sucesso!');

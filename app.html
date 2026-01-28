@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#6366f1">
+  <meta name="theme-color" content="#000000">
   <title>Flashcards Pro</title>
   <link rel="stylesheet" href="css/app.css">
   <link rel="manifest" href="manifest.json">
@@ -49,9 +49,9 @@
           <span>📁</span>
           <span>Pastas</span>
         </button>
-        <button class="nav-btn" data-view="analytics">
+        <button class="nav-btn" data-view="analytics.html">
           <span>📊</span>
-          <span>Análise</span>
+          <span>Estatísticas</span>
         </button>
       </div>
 
@@ -63,6 +63,14 @@
         </button>
       </div>
 
+      <div class="nav-section">
+        <div class="nav-section-title">Análise</div>
+        <button class="nav-btn" onclick="window.location.href='analytics.html'">
+           <span>📊</span>
+           <span>Estatísticas</span>
+       </button>
+      </div>
+      
       <div class="nav-section">
         <div class="nav-section-title">Configurações</div>
         <button class="nav-btn" data-view="settings">
@@ -81,93 +89,59 @@
     
     <!-- DASHBOARD -->
     <section id="dashboard" class="view active">
-  <div class="page-header">
-    <h2>Dashboard</h2>
-    <p>Acompanhe seu progresso real de aprendizado</p>
-  </div>
-
-  <!-- Plano Personalizado -->
-  <div class="plan-card" id="planCard">
-    <h3>🎯 Seu Plano Personalizado</h3>
-    <div id="planContent">
-      <p>Carregando seu plano...</p>
-    </div>
-  </div>
-
-  <!-- Cards de Estatísticas -->
-  <div class="stats-grid">
-    <!-- Cartões estudados hoje -->
-    <div class="stat-card">
-      <div class="stat-header">
-        <div class="stat-title">Hoje</div>
+      <div class="page-header">
+        <h2>Dashboard</h2>
+        <p>Acompanhe seu progresso de aprendizado</p>
       </div>
-      <div class="stat-value" id="statToday">0</div>
-      <div class="stat-change">cartões estudados</div>
-    </div>
 
-    <!-- Sequência (streak) -->
-    <div class="stat-card">
-      <div class="stat-header">
-        <div class="stat-title">Sequência</div>
+      <div class="plan-card" id="planCard">
+        <h3>🎯 Seu Plano Personalizado</h3>
+        <div id="planContent">
+          <p>Carregando seu plano...</p>
+        </div>
       </div>
-      <div class="stat-value" id="statStreak">0</div>
-      <div class="stat-change">dias consecutivos 🔥</div>
-    </div>
 
-    <!-- Precisão Geral -->
-    <div class="stat-card highlight">
-      <div class="stat-header">
-        <div class="stat-title">Precisão Geral</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-title">Hoje</div>
+          </div>
+          <div class="stat-value" id="statToday">0</div>
+          <div class="stat-change">cartões estudados</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-title">Acertos</div>
+          </div>
+          <div class="stat-value" id="statAccuracy">0%</div>
+          <div class="stat-change">taxa de sucesso</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-title">Sequência</div>
+          </div>
+          <div class="stat-value" id="statStreak">0</div>
+          <div class="stat-change">dias consecutivos</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-title">Cards</div>
+          </div>
+          <div class="stat-value" id="statDecks">0</div>
+          <div class="stat-change" id="statCards">0 cartões</div>
+        </div>
       </div>
-      <div class="stat-value" id="statAccuracy">0%</div>
-      <div class="stat-change">acertos totais</div>
-    </div>
 
-    <!-- Total de Decks -->
-    <div class="stat-card">
-      <div class="stat-header">
-        <div class="stat-title">Decks</div>
+      <div class="page-header" style="margin-top: 2rem;">
+        <h2>Revisões Pendentes</h2>
+        <p>Cartões que precisam ser revisados hoje</p>
       </div>
-      <div class="stat-value" id="statDecks">0</div>
-      <div class="stat-change">criados</div>
-    </div>
 
-    <!-- Total de Cartões -->
-    <div class="stat-card">
-      <div class="stat-header">
-        <div class="stat-title">Cartões</div>
-      </div>
-      <div class="stat-value" id="statCards">0</div>
-      <div class="stat-change">no total</div>
-    </div>
-
-    <!-- Revisões Pendentes (opcional - pode remover se não quiser) -->
-    <div class="stat-card warning">
-      <div class="stat-header">
-        <div class="stat-title">Pendentes</div>
-      </div>
-      <div class="stat-value" id="statReviews">0</div>
-      <div class="stat-change">revisões hoje</div>
-    </div>
-  </div>
-
-  <!-- Análise Inteligente baseada nos seus estudos reais -->
-  <div class="analysis-card" style="margin-top: 2rem; padding: 1.5rem; background: white; border-radius: 12px; box-shadow: var(--shadow-md);">
-    <h3 style="margin-bottom: 1rem;">📊 Sua Análise Atual</h3>
-    <p id="analysisText" style="line-height: 1.6; color: var(--text-primary);">
-      Carregando análise dos seus estudos...
-    </p>
-  </div>
-
-  <!-- Revisões Pendentes - Lista de decks com cartões para revisar -->
-  <div style="margin-top: 2rem;">
-    <h3>Revisões Pendentes Hoje</h3>
-    <div id="reviewCards" class="cards-grid" style="margin-top: 1rem;">
-      <!-- Aqui serão renderizados os decks com cartões pendentes -->
-      <p>Carregando revisões...</p>
-    </div>
-  </div>
-</section>
+      <div id="reviewCards" class="cards-grid"></div>
+    </section>
 
     <!-- STUDY -->
     <section id="study" class="view">
@@ -198,8 +172,8 @@
 
         <div class="flashcard-container" id="flashcardContainer">
           <div class="flashcard-content">
-            <div class="flashcard-hint" id="flashcardHint"></div>
             <div class="flashcard-text" id="flashcardText">Selecione um card para começar</div>
+            <div class="flashcard-hint" id="flashcardHint"></div>
             <input type="text" class="typing-input" id="typingInput" style="display: none;" placeholder="Digite sua resposta...">
           </div>
         </div>
@@ -346,17 +320,6 @@
       <div class="page-header">
         <h2>Configurações</h2>
         <p>Personalize sua experiência de estudo</p>
-        
-        <!-- Botão de Instalação PWA -->
-        <div id="installPrompt" style="display: none; margin-top: 1.5rem;">
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 12px; text-align: center;">
-            <h3 style="margin-bottom: 0.5rem;">📱 Instalar Aplicativo</h3>
-            <p style="margin-bottom: 1rem; opacity: 0.9;">Use como aplicativo nativo no seu dispositivo</p>
-            <button class="btn btn-primary" id="installButton" style="background: white; color: #764ba2;">
-              ⬇️ Instalar Agora
-            </button>
-          </div>
-        </div>
       </div>
 
       <div class="form-container">
@@ -446,24 +409,13 @@
     </div>
   </div>
 
-  <!-- Firebase -->
+  <!-- Firebase e Scripts -->
   <script type="module" src="js/firebase-config.js"></script>
-  <script type="module" src="js/app.js"></script>
-
-  <!-- Service Worker -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-          .then(registration => {
-            console.log('✅ Service Worker registrado:', registration);
-          })
-          .catch(error => {
-            console.log('❌ Erro ao registrar Service Worker:', error);
-          });
-      });
-    }
-  </script>
+  <script type="module" src="js/app-init.js"></script>
+  <script type="module" src="js/app-ui.js"></script>
+  <script type="module" src="js/app-decks.js"></script>
+  <script type="module" src="js/app-study.js"></script>
+  <script type="module" src="js/app-main.js"></script>
 
 </body>
 </html>
