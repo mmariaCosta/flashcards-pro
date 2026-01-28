@@ -67,8 +67,8 @@
       <div class="chart-header">
         <h2>Últimos 7 Dias</h2>
         <div class="chart-controls">
-          <button class="chart-btn active" onclick="changeView('week')">7 dias</button>
-          <button class="chart-btn" onclick="changeView('month')">30 dias</button>
+          <button class="chart-btn active" onclick="changeView('week', event)">7 dias</button>
+          <button class="chart-btn" onclick="changeView('month', event)">30 dias</button>
         </div>
       </div>
 
@@ -98,36 +98,36 @@
         <div class="progress-ring">
           <svg class="ring-svg" width="180" height="180">
             <circle class="ring-background" cx="90" cy="90" r="80"/>
-            <circle class="ring-progress success" cx="90" cy="90" r="80" 
+            <circle id="completionRing" class="ring-progress success" cx="90" cy="90" r="80" 
                     stroke-dasharray="502.4" stroke-dashoffset="125.6"/>
           </svg>
-          <div class="ring-text">75%</div>
+          <div class="ring-text" id="completionText">75%</div>
         </div>
         <h3>Taxa de Conclusão</h3>
-        <p>Você completou 75% dos seus estudos planejados</p>
+        <p id="completionDesc">Você completou 75% dos seus estudos planejados</p>
       </div>
 
       <div class="progress-card">
         <div class="progress-ring">
           <svg class="ring-svg" width="180" height="180">
             <circle class="ring-background" cx="90" cy="90" r="80"/>
-            <circle class="ring-progress warning" cx="90" cy="90" r="80" 
+            <circle id="consistencyRing" class="ring-progress warning" cx="90" cy="90" r="80" 
                     stroke-dasharray="502.4" stroke-dashoffset="150.72"/>
           </svg>
-          <div class="ring-text">70%</div>
+          <div class="ring-text" id="consistencyText">70%</div>
         </div>
         <h3>Consistência</h3>
-        <p>Você estudou em 21 dos últimos 30 dias</p>
+        <p id="consistencyDesc">Você estudou em 21 dos últimos 30 dias</p>
       </div>
 
       <div class="progress-card">
         <div class="progress-ring">
           <svg class="ring-svg" width="180" height="180">
             <circle class="ring-background" cx="90" cy="90" r="80"/>
-            <circle class="ring-progress success" cx="90" cy="90" r="80" 
+            <circle id="accuracyRing" class="ring-progress success" cx="90" cy="90" r="80" 
                     stroke-dasharray="502.4" stroke-dashoffset="100.48"/>
           </svg>
-          <div class="ring-text">80%</div>
+          <div class="ring-text" id="accuracyText">80%</div>
         </div>
         <h3>Acurácia</h3>
         <p>Taxa de acerto nas revisões</p>

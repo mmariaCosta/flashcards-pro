@@ -6,19 +6,6 @@ import { getFirestore, doc, getDoc, setDoc, updateDoc } from 'https://www.gstati
 const auth = getAuth();
 const db = getFirestore();
 
-// ===== SAMPLE DATA (FALLBACK) =====
-const sampleWeekData = [
-  { day: 'Seg', cards: 25, goal: 20, date: getDateString(-6) },
-  { day: 'Ter', cards: 18, goal: 20, date: getDateString(-5) },
-  { day: 'Qua', cards: 22, goal: 20, date: getDateString(-4) },
-  { day: 'Qui', cards: 12, goal: 20, date: getDateString(-3) },
-  { day: 'Sex', cards: 28, goal: 20, date: getDateString(-2) },
-  { day: 'Sáb', cards: 15, goal: 20, date: getDateString(-1) },
-  { day: 'Dom', cards: 20, goal: 20, date: getDateString(0) }
-];
-
-const sampleMonthData = generateSampleMonthData();
-
 // ===== GLOBAL STATE =====
 let currentView = 'week';
 let currentUser = null;
@@ -69,6 +56,19 @@ function generateSampleMonthData() {
   return data;
 }
 
+// ===== SAMPLE DATA (FALLBACK) =====
+const sampleWeekData = [
+  { day: 'Seg', cards: 25, goal: 20, date: getDateString(-6) },
+  { day: 'Ter', cards: 18, goal: 20, date: getDateString(-5) },
+  { day: 'Qua', cards: 22, goal: 20, date: getDateString(-4) },
+  { day: 'Qui', cards: 12, goal: 20, date: getDateString(-3) },
+  { day: 'Sex', cards: 28, goal: 20, date: getDateString(-2) },
+  { day: 'Sáb', cards: 15, goal: 20, date: getDateString(-1) },
+  { day: 'Dom', cards: 20, goal: 20, date: getDateString(0) }
+];
+
+const sampleMonthData = generateSampleMonthData();
+
 /**
  * Determines the class for a bar based on cards studied vs goal
  * @param {number} cards - Number of cards studied
@@ -87,6 +87,11 @@ function getBarClass(cards, goal) {
  */
 function renderChart(data) {
   const chartContainer = document.getElementById('barChart');
+  if (!chartContainer) {
+    console.error('Elemento barChart não encontrado');
+    return;
+  }
+  
   chartContainer.innerHTML = '';
 
   if (!data || data.length === 0) {
@@ -131,19 +136,26 @@ function renderChart(data) {
 /**
  * Changes the chart view between week and month
  * @param {string} view - 'week' or 'month'
+ * @param {Event} e - Click event object
  */
-async function changeView(view) {
+async function changeView(view, e) {
   currentView = view;
 
   // Update button states
   document.querySelectorAll('.chart-btn').forEach(btn => {
     btn.classList.remove('active');
   });
-  event.target.classList.add('active');
+  
+  // BUG FIX: Usar o evento passado como parâmetro ao invés de 'event' global
+  if (e && e.target) {
+    e.target.classList.add('active');
+  }
 
   // Update chart header title
   const chartHeader = document.querySelector('.chart-header h2');
-  chartHeader.textContent = view === 'week' ? 'Últimos 7 Dias' : 'Últimos 30 Dias';
+  if (chartHeader) {
+    chartHeader.textContent = view === 'week' ? 'Últimos 7 Dias' : 'Últimos 30 Dias';
+  }
 
   // Load and render appropriate data
   await loadChartData(view);
@@ -206,26 +218,41 @@ function calculateStats(data) {
  * @param {Object} stats - Statistics object
  */
 function updateStatusCards(stats) {
-  document.getElementById('daysAbove').textContent = stats.above;
-  document.getElementById('daysAverage').textContent = stats.average;
-  document.getElementById('daysBelow').textContent = stats.below;
-  document.getElementById('dailyGoal').textContent = stats.goal;
+  // BUG FIX: Adicionar verificação se elementos existem
+  const daysAboveEl = document.getElementById('daysAbove');
+  const daysAverageEl = document.getElementById('daysAverage');
+  const daysBelowEl = document.getElementById('daysBelow');
+  const dailyGoalEl = document.getElementById('dailyGoal');
 
-  // Update progress rings
-  updateProgressRing('.progress-card:nth-child(1) .ring-progress', stats.completionRate, 'success');
-  updateProgressRing('.progress-card:nth-child(2) .ring-progress', stats.consistency, 'warning');
-  updateProgressRing('.progress-card:nth-child(3) .ring-progress', stats.accuracy, 'success');
+  if (daysAboveEl) daysAboveEl.textContent = stats.above;
+  if (daysAverageEl) daysAverageEl.textContent = stats.average;
+  if (daysBelowEl) daysBelowEl.textContent = stats.below;
+  if (dailyGoalEl) dailyGoalEl.textContent = stats.goal;
 
-  // Update ring text
-  document.querySelectorAll('.ring-text')[0].textContent = `${stats.completionRate}%`;
-  document.querySelectorAll('.ring-text')[1].textContent = `${stats.consistency}%`;
-  document.querySelectorAll('.ring-text')[2].textContent = `${stats.accuracy}%`;
+  // Update progress rings - BUG FIX: Usar IDs ao invés de nth-child
+  updateProgressRing('#completionRing', stats.completionRate, 'success');
+  updateProgressRing('#consistencyRing', stats.consistency, 'warning');
+  updateProgressRing('#accuracyRing', stats.accuracy, 'success');
 
-  // Update descriptions
-  document.querySelectorAll('.progress-card p')[0].textContent = 
-    `Você completou ${stats.completionRate}% dos seus estudos planejados`;
-  document.querySelectorAll('.progress-card p')[1].textContent = 
-    `Você estudou em ${stats.daysStudied} dos últimos 30 dias`;
+  // Update ring text - BUG FIX: Usar IDs específicos
+  const completionText = document.getElementById('completionText');
+  const consistencyText = document.getElementById('consistencyText');
+  const accuracyText = document.getElementById('accuracyText');
+
+  if (completionText) completionText.textContent = `${stats.completionRate}%`;
+  if (consistencyText) consistencyText.textContent = `${stats.consistency}%`;
+  if (accuracyText) accuracyText.textContent = `${stats.accuracy}%`;
+
+  // Update descriptions - BUG FIX: Usar IDs específicos
+  const completionDesc = document.getElementById('completionDesc');
+  const consistencyDesc = document.getElementById('consistencyDesc');
+
+  if (completionDesc) {
+    completionDesc.textContent = `Você completou ${stats.completionRate}% dos seus estudos planejados`;
+  }
+  if (consistencyDesc) {
+    consistencyDesc.textContent = `Você estudou em ${stats.daysStudied} dos últimos 30 dias`;
+  }
 }
 
 /**
@@ -236,7 +263,10 @@ function updateStatusCards(stats) {
  */
 function updateProgressRing(selector, percentage, colorClass) {
   const ring = document.querySelector(selector);
-  if (!ring) return;
+  if (!ring) {
+    console.warn(`Elemento ${selector} não encontrado`);
+    return;
+  }
 
   const circumference = 502.4; // 2 * PI * 80
   const offset = circumference - (percentage / 100) * circumference;
@@ -344,7 +374,10 @@ function showSampleDataInfo() {
   const existingBanner = document.querySelector('.info-banner');
   if (existingBanner) existingBanner.remove();
   
-  container.insertBefore(infoDiv, header.nextSibling);
+  // BUG FIX: Verificar se container e header existem
+  if (container && header) {
+    container.insertBefore(infoDiv, header.nextSibling);
+  }
 }
 
 /**
