@@ -57,8 +57,12 @@ if (logoutBtn) {
 // ===== FUNÇÕES AUXILIARES =====
 function getDateString(daysAgo) {
   const date = new Date();
-  date.setDate(date.getDate() + daysAgo);
-  return date.toISOString().split('T')[0];
+  // Ajuste de fuso horário para garantir o dia correto localmente
+  const offset = date.getTimezoneOffset() * 60000;
+  const localDate = new Date(date.getTime() - offset);
+  
+  localDate.setDate(localDate.getDate() + daysAgo);
+  return localDate.toISOString().split('T')[0];
 }
 
 function getDayName(dateStr) {

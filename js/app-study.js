@@ -384,7 +384,8 @@ function levenshteinDistance(str1, str2) {
 export async function rateCard(rating) {
   const card = appState.currentDeck.cards[appState.currentCardIndex];
   const now = new Date();
-  const today = now.toISOString().split('T')[0];
+  const offset = now.getTimezoneOffset() * 60000;
+  const today = new Date(now.getTime() - offset).toISOString().split('T')[0];
 
   // 1. ATUALIZAR CONTADOR DE CARDS DO DIA PRIMEIRO
   appState.stats.studiedToday++;
@@ -476,10 +477,6 @@ export async function rateCard(rating) {
     
     // Salvar stats
     await saveStats();
-    
-    // Salvar histórico diário CORRIGIDO
-    await saveDailyStudy();
-    
     console.log('✅ Dados salvos no Firebase com sucesso!');
     
     // Atualizar dashboard
@@ -496,50 +493,6 @@ export async function rateCard(rating) {
     nextCard();
   } else {
     finishStudySession();
-  }
-}
-
-// ===== SALVAR HISTÓRICO DIÁRIO - VERSÃO CORRIGIDA =====
-async function saveDailyStudy() {
-  const today = new Date().toISOString().split('T')[0];
-
-  try {
-    const userRef = doc(db, 'users', appState.user.uid);
-    const userDoc = await getDoc(userRef);
-    
-    if (!userDoc.exists()) {
-      console.error('❌ Documento do usuário não existe!');
-      return;
-    }
-
-    const userData = userDoc.data();
-    const studyHistory = userData.studyHistory || {};
-
-    // Inicializar ou atualizar entrada do dia
-    if (!studyHistory[today]) {
-      studyHistory[today] = {
-        cards: 0,
-        correct: 0,
-        wrong: 0,
-        date: today
-      };
-    }
-
-    // Atualizar contadores
-    studyHistory[today].cards = appState.stats.studiedToday;
-    studyHistory[today].correct = appState.stats.totalCorrect;
-    studyHistory[today].wrong = appState.stats.totalWrong;
-    studyHistory[today].lastUpdate = new Date().toISOString();
-
-    // Salvar no Firebase
-    await updateDoc(userRef, {
-      studyHistory: studyHistory
-    });
-
-    console.log('📊 Histórico diário ATUALIZADO:', today, studyHistory[today]);
-  } catch (err) {
-    console.error('❌ Erro ao salvar histórico diário:', err);
-    console.error('Detalhes:', err.message);
   }
 }
 
