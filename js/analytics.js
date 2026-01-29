@@ -401,23 +401,47 @@ async function loadChartData(view) {
  */
 async function initAnalytics() {
   console.log('🚀 Initializing Analytics...');
-  showLoading(true);
+  
+  // Timeout de segurança - se demorar mais de 5 segundos, mostra dados de exemplo
+  const timeout = setTimeout(() => {
+    console.log('⏱️ Timeout atingido, mostrando dados de exemplo');
+    renderChart(sampleWeekData);
+    const stats = calculateStats(sampleMonthData);
+    updateStatusCards(stats);
+    showSampleDataInfo();
+    animateProgressRings();
+    showLoading(false);
+  }, 5000);
 
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      console.log('✅ User logged in:', user.email);
-      currentUser = user;
-      await loadChartData('week');
-    } else {
-      console.log('ℹ️ No user logged in, showing sample data');
-      renderChart(sampleWeekData);
-      const stats = calculateStats(sampleMonthData);
-      updateStatusCards(stats);
-      showSampleDataInfo();
-      animateProgressRings();
-      showLoading(false);
-    }
-  });
+  try {
+    onAuthStateChanged(auth, async (user) => {
+      clearTimeout(timeout); // Cancela o timeout
+      
+      if (user) {
+        console.log('✅ User logged in:', user.email);
+        currentUser = user;
+        await loadChartData('week');
+      } else {
+        console.log('ℹ️ No user logged in, showing sample data');
+        renderChart(sampleWeekData);
+        const stats = calculateStats(sampleMonthData);
+        updateStatusCards(stats);
+        showSampleDataInfo();
+        animateProgressRings();
+        showLoading(false);
+      }
+    });
+  } catch (error) {
+    clearTimeout(timeout);
+    console.error('❌ Erro ao inicializar analytics:', error);
+    // Mostra dados de exemplo em caso de erro
+    renderChart(sampleWeekData);
+    const stats = calculateStats(sampleMonthData);
+    updateStatusCards(stats);
+    showSampleDataInfo();
+    animateProgressRings();
+    showLoading(false);
+  }
 }
 
 // ===== MAKE FUNCTIONS GLOBAL FOR HTML =====

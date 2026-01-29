@@ -46,6 +46,8 @@ export function showLoading(show) {
 
 // ===== LOAD USER DATA FROM FIREBASE =====
 export async function loadUserData() {
+  console.log('📥 Carregando dados do usuário...');
+  
   try {
     const userDocRef = doc(db, 'users', appState.user.uid);
     const userDoc = await getDoc(userDocRef);
@@ -55,29 +57,50 @@ export async function loadUserData() {
       appState.stats = appState.userData.stats || appState.stats;
       appState.settings = appState.userData.settings || appState.settings;
       
+      console.log('✅ Dados do usuário carregados');
+      
       const userNameEl = document.getElementById('userName');
       if (userNameEl) {
         userNameEl.textContent = appState.userData.nome || appState.user.email;
       }
+    } else {
+      console.log('⚠️ Documento do usuário não existe');
     }
 
+    // Carregar decks
+    console.log('📚 Carregando decks...');
     const decksSnapshot = await getDocs(collection(db, 'users', appState.user.uid, 'decks'));
-    appState.decks = decksSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    appState.decks = decksSnapshot.docs.map(doc => {
+      const data = doc.data();
+      console.log('  ✓ Deck encontrado:', data.name);
+      return {
+        id: doc.id,
+        ...data
+      };
+    });
+    console.log(`✅ ${appState.decks.length} decks carregados`);
 
+    // Carregar pastas
+    console.log('📁 Carregando pastas...');
     const foldersSnapshot = await getDocs(collection(db, 'users', appState.user.uid, 'folders'));
-    appState.folders = foldersSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    appState.folders = foldersSnapshot.docs.map(doc => {
+      const data = doc.data();
+      console.log('  ✓ Pasta encontrada:', data.name);
+      return {
+        id: doc.id,
+        ...data
+      };
+    });
+    console.log(`✅ ${appState.folders.length} pastas carregadas`);
 
     updateStreak();
     
+    console.log('🎉 Todos os dados carregados com sucesso!');
+    
   } catch (error) {
-    console.error('Erro ao carregar dados:', error);
-    alert('Erro ao carregar seus dados. Tente novamente.');
+    console.error('❌ Erro ao carregar dados:', error);
+    console.error('Detalhes do erro:', error.message);
+    throw error; // Re-throw para o initApp capturar
   }
 }
 
@@ -196,18 +219,44 @@ export function isCardDue(card) {
 
 // ===== INITIALIZE APP =====
 export async function initApp() {
+  console.log('🚀 Iniciando aplicativo...');
   showLoading(true);
   
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      appState.user = user;
-      await loadUserData();
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => {
+      console.log('⏱️ Timeout - redirecionando para login');
       showLoading(false);
-      return true;
-    } else {
       window.location.href = 'index.html';
-      return false;
-    }
+      resolve(false);
+    }, 10000); // 10 segundos de timeout
+
+    onAuthStateChanged(auth, async (user) => {
+      clearTimeout(timeout);
+      
+      if (user) {
+        console.log('✅ Usuário autenticado:', user.email);
+        appState.user = user;
+        
+        try {
+          await loadUserData();
+          console.log('✅ Dados carregados com sucesso');
+          console.log('📊 Decks carregados:', appState.decks.length);
+          showLoading(false);
+          resolve(true);
+        } catch (error) {
+          console.error('❌ Erro ao carregar dados:', error);
+          showLoading(false);
+          alert('Erro ao carregar seus dados. Tente fazer login novamente.');
+          window.location.href = 'index.html';
+          resolve(false);
+        }
+      } else {
+        console.log('❌ Nenhum usuário autenticado - redirecionando');
+        showLoading(false);
+        window.location.href = 'index.html';
+        resolve(false);
+      }
+    });
   });
 }
 
