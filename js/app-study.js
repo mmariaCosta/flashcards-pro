@@ -91,7 +91,7 @@ function addAudioButton(text) {
   const audioBtn = document.createElement('button');
   audioBtn.id = 'audioBtn';
   audioBtn.className = 'flashcard-audio';
-  audioBtn.innerHTML = '🔊';
+  audioBtn.innerHTML = '🔊 Ouvir Pronúncia';
   audioBtn.title = 'Ouvir pronúncia';
   audioBtn.style.cssText = `
     background: var(--accent);
@@ -100,16 +100,22 @@ function addAudioButton(text) {
     padding: 0.75rem 1.5rem;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 1.2rem;
+    font-size: 1rem;
+    font-weight: 600;
     margin-top: 1rem;
     transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
   `;
   
   audioBtn.onmouseover = function() {
     this.style.transform = 'scale(1.05)';
+    this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
   };
   audioBtn.onmouseout = function() {
     this.style.transform = 'scale(1)';
+    this.style.boxShadow = 'none';
   };
   
   audioBtn.onclick = (e) => {
@@ -118,6 +124,19 @@ function addAudioButton(text) {
   };
 
   hintEl.appendChild(audioBtn);
+
+  // Adiciona info do idioma
+  const langInfo = document.createElement('div');
+  langInfo.style.cssText = `
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-align: center;
+  `;
+  const folderName = appState.currentDeck.folder || 'Idioma';
+  const langCode = getLanguageCode(folderName);
+  langInfo.textContent = `Idioma: ${folderName} (${langCode})`;
+  hintEl.appendChild(langInfo);
 }
 
 function removeAudioButton() {
@@ -132,34 +151,156 @@ function speakText(text) {
     return;
   }
 
+  // Cancela qualquer fala anterior
   appState.speechSynthesis.cancel();
 
   const utterance = new SpeechSynthesisUtterance(text);
   
+  // Detecta idioma
   const folderName = appState.currentDeck.folder || '';
-  utterance.lang = getLanguageCode(folderName);
-  utterance.rate = 0.9;
-  utterance.pitch = 1;
+  const langCode = getLanguageCode(folderName);
+  utterance.lang = langCode;
+  
+  // Configurações de qualidade
+  utterance.rate = 0.85; // Velocidade (0.1 - 10)
+  utterance.pitch = 1.0; // Tom (0 - 2)
+  utterance.volume = 1.0; // Volume (0 - 1)
 
+  // Tenta encontrar a melhor voz para o idioma
+  const voices = appState.speechSynthesis.getVoices();
+  
+  // Procura voz nativa do idioma
+  let bestVoice = voices.find(voice => voice.lang === langCode);
+  
+  // Se não encontrar, procura voz do mesmo idioma base (ex: pt-BR ou pt-PT)
+  if (!bestVoice) {
+    const baseLang = langCode.split('-')[0];
+    bestVoice = voices.find(voice => voice.lang.startsWith(baseLang));
+  }
+  
+  // Se encontrou uma voz boa, usa ela
+  if (bestVoice) {
+    utterance.voice = bestVoice;
+    console.log(`🔊 Usando voz: ${bestVoice.name} (${bestVoice.lang})`);
+  } else {
+    console.log(`⚠️ Nenhuma voz específica encontrada para ${langCode}, usando padrão`);
+  }
+
+  // Callbacks para debug
+  utterance.onstart = () => {
+    console.log(`▶️ Reproduzindo: "${text}" em ${langCode}`);
+  };
+
+  utterance.onerror = (event) => {
+    console.error('❌ Erro ao reproduzir áudio:', event.error);
+    alert('Erro ao reproduzir áudio. Tente novamente.');
+  };
+
+  utterance.onend = () => {
+    console.log('✅ Áudio concluído');
+  };
+
+  // Reproduz
   appState.speechSynthesis.speak(utterance);
 }
 
 function getLanguageCode(folderName) {
   const languageMap = {
+    // Idiomas Principais
     'Inglês': 'en-US',
     'Espanhol': 'es-ES',
     'Francês': 'fr-FR',
     'Italiano': 'it-IT',
     'Alemão': 'de-DE',
+    'Português': 'pt-BR',
+    
+    // Idiomas Asiáticos
     'Japonês': 'ja-JP',
     'Coreano': 'ko-KR',
     'Chinês': 'zh-CN',
-    'Russo': 'ru-RU',
+    'Mandarim': 'zh-CN',
+    'Cantonês': 'zh-HK',
+    'Tailandês': 'th-TH',
+    'Vietnamita': 'vi-VN',
+    'Indonésio': 'id-ID',
+    'Malaio': 'ms-MY',
+    'Tagalo': 'tl-PH',
+    'Filipino': 'fil-PH',
+    'Hindi': 'hi-IN',
+    'Bengali': 'bn-IN',
+    'Urdu': 'ur-PK',
+    
+    // Idiomas do Oriente Médio
     'Árabe': 'ar-SA',
-    'Português': 'pt-BR'
+    'Hebraico': 'he-IL',
+    'Turco': 'tr-TR',
+    'Persa': 'fa-IR',
+    'Farsi': 'fa-IR',
+    
+    // Idiomas Europeus (Ocidentais)
+    'Holandês': 'nl-NL',
+    'Sueco': 'sv-SE',
+    'Norueguês': 'nb-NO',
+    'Dinamarquês': 'da-DK',
+    'Finlandês': 'fi-FI',
+    'Islandês': 'is-IS',
+    
+    // Idiomas Europeus (Orientais)
+    'Russo': 'ru-RU',
+    'Polonês': 'pl-PL',
+    'Ucraniano': 'uk-UA',
+    'Tcheco': 'cs-CZ',
+    'Húngaro': 'hu-HU',
+    'Romeno': 'ro-RO',
+    'Búlgaro': 'bg-BG',
+    'Croata': 'hr-HR',
+    'Sérvio': 'sr-RS',
+    'Eslovaco': 'sk-SK',
+    'Esloveno': 'sl-SI',
+    
+    // Idiomas Europeus (Sul)
+    'Grego': 'el-GR',
+    'Catalão': 'ca-ES',
+    'Galego': 'gl-ES',
+    'Basco': 'eu-ES',
+    
+    // Idiomas Africanos
+    'Africâner': 'af-ZA',
+    'Swahili': 'sw-KE',
+    'Zulu': 'zu-ZA',
+    'Xhosa': 'xh-ZA',
+    'Amárico': 'am-ET',
+    
+    // Outros Idiomas Latinos
+    'Latim': 'la',
+    
+    // Variações Regionais
+    'Inglês Britânico': 'en-GB',
+    'Inglês Americano': 'en-US',
+    'Inglês Australiano': 'en-AU',
+    'Espanhol Mexicano': 'es-MX',
+    'Espanhol Argentino': 'es-AR',
+    'Português Europeu': 'pt-PT',
+    'Português Brasileiro': 'pt-BR',
+    'Francês Canadense': 'fr-CA'
   };
 
-  return languageMap[folderName] || 'en-US';
+  // Busca exata
+  if (languageMap[folderName]) {
+    return languageMap[folderName];
+  }
+
+  // Busca parcial (case insensitive)
+  const normalizedFolder = folderName.toLowerCase();
+  for (const [key, value] of Object.entries(languageMap)) {
+    if (key.toLowerCase().includes(normalizedFolder) || normalizedFolder.includes(key.toLowerCase())) {
+      return value;
+    }
+  }
+
+  // Fallback para inglês
+  console.log(`⚠️ Idioma "${folderName}" não encontrado, usando inglês como padrão`);
+  return 'en-US';
 }
 
 // ===== FLIP CARD =====

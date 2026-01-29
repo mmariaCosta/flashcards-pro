@@ -1,10 +1,23 @@
 // ===== FIREBASE IMPORTS =====
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
-// ===== FIREBASE INITIALIZATION =====
-const auth = getAuth();
-const db = getFirestore();
+// ===== FIREBASE CONFIG =====
+const firebaseConfig = {
+  apiKey: "AIzaSyD1A2k13tEZtKJdmRE3o0MXEvCULFHSUcs",
+  authDomain: "flashcards-28a9e.firebaseapp.com",
+  projectId: "flashcards-28a9e",
+  storageBucket: "flashcards-28a9e.firebasestorage.app",
+  messagingSenderId: "93390501016",
+  appId: "1:93390501016:web:b4caddacc434ce68074ced",
+  measurementId: "G-19DT142R85"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 // ===== SAMPLE DATA (FALLBACK) =====
 const sampleWeekData = [
@@ -53,7 +66,7 @@ function generateSampleMonthData() {
     const date = new Date();
     date.setDate(date.getDate() - i);
     const day = date.getDate().toString().padStart(2, '0');
-    const cards = Math.floor(Math.random() * 20) + 10; // 10-30 cards
+    const cards = Math.floor(Math.random() * 20) + 10;
     data.push({
       day: day,
       cards: cards,
@@ -78,6 +91,11 @@ function getBarClass(cards, goal) {
  */
 function renderChart(data) {
   const chartContainer = document.getElementById('barChart');
+  if (!chartContainer) {
+    console.error('barChart element not found');
+    return;
+  }
+
   chartContainer.innerHTML = '';
 
   if (!data || data.length === 0) {
@@ -110,6 +128,8 @@ function renderChart(data) {
     barItem.appendChild(label);
     chartContainer.appendChild(barItem);
   });
+
+  console.log('✅ Chart rendered with', data.length, 'items');
 }
 
 /**
@@ -124,7 +144,9 @@ async function changeView(view) {
   event.target.classList.add('active');
 
   const chartHeader = document.querySelector('.chart-header h2');
-  chartHeader.textContent = view === 'week' ? 'Últimos 7 Dias' : 'Últimos 30 Dias';
+  if (chartHeader) {
+    chartHeader.textContent = view === 'week' ? 'Últimos 7 Dias' : 'Últimos 30 Dias';
+  }
 
   await loadChartData(view);
 }
@@ -160,7 +182,7 @@ function calculateStats(data) {
 
   const accuracy = totalCorrect + totalWrong > 0 
     ? Math.round((totalCorrect / (totalCorrect + totalWrong)) * 100) 
-    : 0;
+    : 80;
 
   const completionRate = Math.round((daysStudied / data.length) * 100);
   const consistency = Math.round((daysStudied / 30) * 100);
@@ -182,23 +204,36 @@ function calculateStats(data) {
  * Updates the status cards with calculated statistics
  */
 function updateStatusCards(stats) {
-  document.getElementById('daysAbove').textContent = stats.above;
-  document.getElementById('daysAverage').textContent = stats.average;
-  document.getElementById('daysBelow').textContent = stats.below;
-  document.getElementById('dailyGoal').textContent = stats.goal;
+  const elements = {
+    daysAbove: document.getElementById('daysAbove'),
+    daysAverage: document.getElementById('daysAverage'),
+    daysBelow: document.getElementById('daysBelow'),
+    dailyGoal: document.getElementById('dailyGoal')
+  };
+
+  if (elements.daysAbove) elements.daysAbove.textContent = stats.above;
+  if (elements.daysAverage) elements.daysAverage.textContent = stats.average;
+  if (elements.daysBelow) elements.daysBelow.textContent = stats.below;
+  if (elements.dailyGoal) elements.dailyGoal.textContent = stats.goal;
 
   updateProgressRing('.progress-card:nth-child(1) .ring-progress', stats.completionRate, 'success');
   updateProgressRing('.progress-card:nth-child(2) .ring-progress', stats.consistency, 'warning');
   updateProgressRing('.progress-card:nth-child(3) .ring-progress', stats.accuracy, 'success');
 
-  document.querySelectorAll('.ring-text')[0].textContent = `${stats.completionRate}%`;
-  document.querySelectorAll('.ring-text')[1].textContent = `${stats.consistency}%`;
-  document.querySelectorAll('.ring-text')[2].textContent = `${stats.accuracy}%`;
+  const ringTexts = document.querySelectorAll('.ring-text');
+  if (ringTexts[0]) ringTexts[0].textContent = `${stats.completionRate}%`;
+  if (ringTexts[1]) ringTexts[1].textContent = `${stats.consistency}%`;
+  if (ringTexts[2]) ringTexts[2].textContent = `${stats.accuracy}%`;
 
-  document.querySelectorAll('.progress-card p')[0].textContent = 
-    `Você completou ${stats.completionRate}% dos seus estudos planejados`;
-  document.querySelectorAll('.progress-card p')[1].textContent = 
-    `Você estudou em ${stats.daysStudied} dos últimos 30 dias`;
+  const progressTexts = document.querySelectorAll('.progress-card p');
+  if (progressTexts[0]) {
+    progressTexts[0].textContent = `Você completou ${stats.completionRate}% dos seus estudos planejados`;
+  }
+  if (progressTexts[1]) {
+    progressTexts[1].textContent = `Você estudou em ${stats.daysStudied} dos últimos 30 dias`;
+  }
+
+  console.log('✅ Stats updated:', stats);
 }
 
 /**
@@ -305,7 +340,9 @@ function showSampleDataInfo() {
   
   const container = document.querySelector('.container');
   const header = document.querySelector('.page-header');
-  container.insertBefore(infoDiv, header.nextSibling);
+  if (container && header) {
+    container.insertBefore(infoDiv, header.nextSibling);
+  }
 }
 
 /**
@@ -330,6 +367,7 @@ function showLoading(show) {
  * Loads and displays chart data
  */
 async function loadChartData(view) {
+  console.log('Loading chart data for view:', view);
   showLoading(true);
   
   const days = view === 'week' ? 7 : 30;
@@ -339,11 +377,13 @@ async function loadChartData(view) {
   let stats;
 
   if (hasEnoughData(history)) {
+    console.log('Using real data from Firebase');
     data = generateDataFromHistory(history, days);
     const monthData = generateDataFromHistory(history, 30);
     stats = calculateStats(monthData);
     removeSampleDataInfo();
   } else {
+    console.log('Using sample data');
     data = view === 'week' ? sampleWeekData : sampleMonthData;
     stats = calculateStats(sampleMonthData);
     showSampleDataInfo();
@@ -360,13 +400,16 @@ async function loadChartData(view) {
  * Initializes the analytics page
  */
 async function initAnalytics() {
+  console.log('🚀 Initializing Analytics...');
   showLoading(true);
 
   onAuthStateChanged(auth, async (user) => {
     if (user) {
+      console.log('✅ User logged in:', user.email);
       currentUser = user;
       await loadChartData('week');
     } else {
+      console.log('ℹ️ No user logged in, showing sample data');
       renderChart(sampleWeekData);
       const stats = calculateStats(sampleMonthData);
       updateStatusCards(stats);
@@ -387,4 +430,4 @@ if (document.readyState === 'loading') {
   initAnalytics();
 }
 
-console.log('✅ Analytics carregado com sucesso!');
+console.log('✅ Analytics.js carregado com sucesso!');
