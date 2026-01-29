@@ -282,14 +282,25 @@ export function renderFolders() {
     card.innerHTML = `
       <div class="card-title">📁 ${folder.name}</div>
       <div class="card-subtitle">${deckCount} deck(s) nesta pasta</div>
-      <button class="btn btn-primary" style="margin-top: 1rem; width: 100%;">
-        👁️ Ver Cartões
-      </button>
+      <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+        <button class="btn btn-primary" style="flex: 1;">
+          👁️ Ver Cartões
+        </button>
+        <button class="btn btn-secondary danger" style="padding: 0.75rem 1rem;" title="Excluir pasta">
+          🗑️
+        </button>
+      </div>
     `;
     
     card.querySelector('.btn-primary').onclick = (e) => {
       e.stopPropagation();
       viewFolderCards(folder.name);
+    };
+
+    card.querySelector('.danger').onclick = (e) => {
+      e.stopPropagation();
+      const event = new CustomEvent('deleteFolder', { detail: { folderId: folder.id, folderName: folder.name } });
+      document.dispatchEvent(event);
     };
     
     container.appendChild(card);
@@ -328,11 +339,21 @@ export function viewFolderCards(folderName) {
   
   modalContent.innerHTML = `
     <div style="display: grid; gap: 1rem;">
-      ${allCards.map(card => `
+      ${allCards.map((card, i) => `
         <div style="background: var(--bg-primary); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border);">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
-            <strong style="color: var(--text-secondary); font-size: 0.875rem;">${card.deckName}</strong>
-            <span style="color: var(--text-muted); font-size: 0.875rem;">Nível ${card.level || 0}</span>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; align-items: center;">
+            <div>
+              <strong style="color: var(--text-secondary); font-size: 0.875rem;">${card.deckName}</strong>
+              <span style="color: var(--text-muted); font-size: 0.875rem; margin-left: 1rem;">Nível ${card.level || 0}</span>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-secondary" onclick="app.editCard('${card.deckId}', ${card.id})" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                ✏️ Editar
+              </button>
+              <button class="btn btn-secondary danger" onclick="app.deleteCard('${card.deckId}', ${card.id})" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                🗑️
+              </button>
+            </div>
           </div>
           <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 1.5rem; align-items: center;">
             <div>

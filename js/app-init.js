@@ -177,19 +177,38 @@ export function updateStreak() {
   const today = new Date().toISOString().split('T')[0];
   const lastStudy = appState.stats.lastStudyDate;
 
+  console.log('🔄 Verificando sequência...');
+  console.log('  Hoje:', today);
+  console.log('  Último estudo:', lastStudy);
+  console.log('  Streak atual:', appState.stats.streak);
+
   if (!lastStudy) {
-    appState.stats.streak = 0;
+    console.log('  ℹ️ Nenhum estudo anterior registrado');
     return;
   }
 
-  const lastDate = new Date(lastStudy);
-  const todayDate = new Date(today);
-  const diffTime = Math.abs(todayDate - lastDate);
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  // Se o último estudo NÃO foi hoje
+  if (lastStudy !== today) {
+    const lastDate = new Date(lastStudy + 'T00:00:00');
+    const todayDate = new Date(today + 'T00:00:00');
+    const diffDays = Math.floor((todayDate - lastDate) / (1000 * 60 * 60 * 24));
 
-  if (diffDays > 1) {
-    appState.stats.streak = 0;
-    saveStats();
+    console.log('  📅 Diferença de dias:', diffDays);
+
+    if (diffDays > 1) {
+      // Quebrou a sequência
+      console.log('  ❌ Sequência quebrada! Resetando para 0');
+      appState.stats.streak = 0;
+      appState.stats.studiedToday = 0; // Reset contador diário
+      saveStats();
+    } else if (diffDays === 1) {
+      // Ontem - mantém sequência, mas reseta contador diário
+      console.log('  ✅ Último estudo foi ontem - mantém sequência');
+      appState.stats.studiedToday = 0; // Reset contador diário
+      saveStats();
+    }
+  } else {
+    console.log('  ✅ Último estudo foi hoje - mantém tudo');
   }
 }
 

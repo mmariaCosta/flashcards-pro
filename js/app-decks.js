@@ -6,7 +6,8 @@ import {
   collection,
   addDoc,
   deleteDoc,
-  doc
+  doc,
+  updateDoc
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { EXAMPLE_DECKS } from './example-decks.js';
 
@@ -199,6 +200,139 @@ export async function deleteDeck(deckId) {
     console.error('Erro ao excluir deck:', error);
     showLoading(false);
     alert('Erro ao excluir deck.');
+  }
+}
+
+// ===== DELETE FOLDER =====
+export async function deleteFolder(folderId, folderName) {
+  const decksInFolder = appState.decks.filter(d => d.folder === folderName);
+  
+  if (decksInFolder.length > 0) {
+    alert(`⚠️ Não é possível excluir a pasta "${folderName}".\n\nExistem ${decksInFolder.length} deck(s) nesta pasta.\n\nRemova ou mova os decks antes de excluir a pasta.`);
+    return;
+  }
+  
+  if (!confirm(`Deseja realmente excluir a pasta "${folderName}"?`)) return;
+  
+  showLoading(true);
+  
+  try {
+    await deleteDoc(doc(db, 'users', appState.user.uid, 'folders', folderId));
+    await loadUserData();
+    
+    const event = new CustomEvent('renderAll');
+    document.dispatchEvent(event);
+    
+    showLoading(false);
+    alert('✅ Pasta excluída!');
+  } catch (error) {
+    console.error('Erro ao excluir pasta:', error);
+    showLoading(false);
+    alert('Erro ao excluir pasta.');
+  }
+}
+
+// ===== EDIT CARD =====
+export async function editCard(deckId, cardId) {
+  const deck = appState.decks.find(d => d.id === deckId);
+  if (!deck) return;
+  
+  const card = deck.cards.find(c => c.id === cardId);
+  if (!card) return;
+  
+  const newFront = prompt('Editar PORTUGUÊS (frente):', card.front);
+  if (newFront === null) return; // Cancelou
+  
+  const newBack = prompt('Editar IDIOMA (verso):', card.back);
+  if (newBack === null) return; // Cancelou
+  
+  if (!newFront.trim() || !newBack.trim()) {
+    alert('⚠️ Os dois lados do cartão precisam ter conteúdo!');
+    return;
+  }
+  
+  showLoading(true);
+  
+  try {
+    card.front = newFront.trim();
+    card.back = newBack.trim();
+    
+    await updateDoc(doc(db, 'users', appState.user.uid, 'decks', deckId), {
+      cards: deck.cards
+    });
+    
+    await loadUserData();
+    
+    const event = new CustomEvent('renderAll');
+    document.dispatchEvent(event);
+    
+    // Atualiza o modal se estiver aberto
+    const modal = document.getElementById('folderCardsModal');
+    if (modal && modal.style.display === 'flex') {
+      const folderName = deck.folder;
+      if (folderName) {
+        const { viewFolderCards } = await import('./app-ui.js');
+        viewFolderCards(folderName);
+      }
+    }
+    
+    showLoading(false);
+    alert('✅ Cartão editado com sucesso!');
+  } catch (error) {
+    console.error('Erro ao editar cartão:', error);
+    showLoading(false);
+    alert('Erro ao editar cartão.');
+  }
+}
+
+// ===== DELETE CARD =====
+export async function deleteCard(deckId, cardId) {
+  const deck = appState.decks.find(d => d.id === deckId);
+  if (!deck) return;
+  
+  const card = deck.cards.find(c => c.id === cardId);
+  if (!card) return;
+  
+  if (!confirm(`Deseja excluir este cartão?\n\n🇧🇷 ${card.front}\n🌍 ${card.back}`)) return;
+  
+  showLoading(true);
+  
+  try {
+    deck.cards = deck.cards.filter(c => c.id !== cardId);
+    
+    if (deck.cards.length === 0) {
+      // Se não sobrou nenhum cartão, exclui o deck inteiro
+      await deleteDoc(doc(db, 'users', appState.user.uid, 'decks', deckId));
+      alert('⚠️ Último cartão excluído. O deck foi removido.');
+    } else {
+      await updateDoc(doc(db, 'users', appState.user.uid, 'decks', deckId), {
+        cards: deck.cards
+      });
+    }
+    
+    await loadUserData();
+    
+    const event = new CustomEvent('renderAll');
+    document.dispatchEvent(event);
+    
+    // Atualiza o modal se estiver aberto
+    const modal = document.getElementById('folderCardsModal');
+    if (modal && modal.style.display === 'flex') {
+      const folderName = deck.folder;
+      if (folderName && deck.cards.length > 0) {
+        const { viewFolderCards } = await import('./app-ui.js');
+        viewFolderCards(folderName);
+      } else {
+        modal.style.display = 'none';
+      }
+    }
+    
+    showLoading(false);
+    alert('✅ Cartão excluído!');
+  } catch (error) {
+    console.error('Erro ao excluir cartão:', error);
+    showLoading(false);
+    alert('Erro ao excluir cartão.');
   }
 }
 

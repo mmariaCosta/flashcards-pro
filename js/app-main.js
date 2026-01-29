@@ -19,6 +19,9 @@ import {
   renderDecks, 
   saveDeck, 
   deleteDeck,
+  deleteFolder,
+  editCard,
+  deleteCard,
   renderExampleDecks,
   importExampleDeck,
   exportData,
@@ -239,6 +242,9 @@ window.app = {
   // Deck Management
   saveDeck,
   deleteDeck,
+  deleteFolder,
+  editCard,
+  deleteCard,
   
   // Study
   startStudy,
@@ -268,6 +274,10 @@ document.addEventListener('showView', (e) => {
 
 document.addEventListener('startStudy', (e) => {
   startStudy(e.detail.deckId);
+});
+
+document.addEventListener('deleteFolder', (e) => {
+  deleteFolder(e.detail.folderId, e.detail.folderName);
 });
 
 document.addEventListener('flipCard', flipCard);
