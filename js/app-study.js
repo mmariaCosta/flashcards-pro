@@ -475,6 +475,8 @@ export async function rateCard(rating) {
     });
     
     await saveStats();
+    await saveDailyStudy(appState.stats.studiedToday);
+
     
     // Atualizar dashboard
     const event = new CustomEvent('renderDashboard');
@@ -489,6 +491,26 @@ export async function rateCard(rating) {
     nextCard();
   } else {
     finishStudySession();
+  }
+}
+
+// ===== SALVAR HISTÓRICO DIÁRIO =====
+async function saveDailyStudy(cardsStudied) {
+  const today = new Date().toISOString().split('T')[0];
+
+  try {
+    const userRef = doc(db, 'users', appState.user.uid);
+
+    await updateDoc(userRef, {
+      [`studyHistory.${today}`]: {
+        cards: cardsStudied,
+        lastUpdate: new Date().toISOString()
+      }
+    });
+
+    console.log('📊 Histórico diário salvo:', today, cardsStudied);
+  } catch (err) {
+    console.error('❌ Erro ao salvar histórico diário:', err);
   }
 }
 
