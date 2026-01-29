@@ -1,42 +1,51 @@
 /* ===== AUTH STYLE - MATCHING APP THEME ===== */
 :root {
+  /* Copiando exatamente as variáveis do app.css para consistência */
   --bg-primary: #f5f7fa;
   --bg-secondary: #ffffff;
   --text-primary: #2d3748;
   --text-secondary: #718096;
+  --text-muted: #a0aec0;
   --border: #e2e8f0;
-  --accent: #6366f1; /* Mesmo roxo sutil do app */
+  --accent: #6366f1;
   --accent-hover: #4f46e5;
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --danger: #ef4444;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
 }
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: var(--bg-primary); /* Fundo cinza claro igual ao app */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
+  line-height: 1.6;
 }
 
+/* ===== CONTAINER (Baseado em .form-container e .card do app.css) ===== */
 .auth-container {
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
   background: var(--bg-secondary);
-  border-radius: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 16px; /* Ajustado para 16px para bater com .stat-card e .form-container */
   box-shadow: var(--shadow-lg);
   overflow: hidden;
-  border: 1px solid var(--border);
+  transition: transform 0.3s ease;
 }
 
+/* Header mais espaçado */
 .auth-header {
   padding: 2.5rem 2rem 1.5rem;
   text-align: center;
@@ -44,70 +53,81 @@ body {
 
 .auth-header h1 {
   font-size: 1.75rem;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 0.5rem;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em; /* Kerning igual ao app.css */
 }
 
 .auth-header p {
   color: var(--text-secondary);
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .auth-body {
   padding: 0 2rem 2.5rem;
 }
 
-/* ===== FORM ELEMENTS ===== */
+/* ===== FORM ELEMENTS (Baseado em .form-input do app.css) ===== */
 .form-group {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .form-group label {
   display: block;
-  font-size: 0.875rem;
+  font-size: 0.95rem; /* Ajustado para bater com .form-label */
   font-weight: 600;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
   color: var(--text-primary);
 }
 
 input {
   width: 100%;
-  padding: 0.75rem 1rem;
+  padding: 0.875rem 1.25rem; /* Padding idêntico ao app.css */
+  background: var(--bg-primary);
   border: 1px solid var(--border);
-  border-radius: 0.75rem;
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: inherit;
   font-size: 1rem;
-  transition: all 0.2s;
-  background-color: #f8fafc;
+  transition: all 0.2s ease;
 }
 
 input:focus {
   outline: none;
   border-color: var(--accent);
-  background-color: #fff;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  background: var(--bg-secondary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); /* Mesmo anel de foco */
 }
 
-/* ===== BUTTONS ===== */
+/* ===== BUTTONS (Baseado em .btn e .btn-primary do app.css) ===== */
 .btn-primary {
   width: 100%;
   padding: 0.875rem;
   background-color: var(--accent);
   color: white;
   border: none;
-  border-radius: 0.75rem;
-  font-size: 1rem;
+  border-radius: 12px; /* 12px igual aos botões do app */
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
   margin-top: 0.5rem;
+  box-shadow: var(--shadow);
+  font-family: inherit;
 }
 
 .btn-primary:hover {
   background-color: var(--accent-hover);
+  transform: translateY(-2px); /* Adicionada a animação de "pulo" característica do app */
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* ===== DIVIDER ===== */
 .divider {
   display: flex;
   align-items: center;
@@ -115,6 +135,7 @@ input:focus {
   margin: 1.5rem 0;
   color: var(--text-muted);
   font-size: 0.85rem;
+  font-weight: 500;
 }
 
 .divider::before, .divider::after {
@@ -126,28 +147,40 @@ input:focus {
 .divider:not(:empty)::before { margin-right: .75rem; }
 .divider:not(:empty)::after { margin-left: .75rem; }
 
+/* ===== GOOGLE BUTTON (Estilo Secondary) ===== */
 .btn-google {
   width: 100%;
-  padding: 0.75rem;
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
+  padding: 0.875rem;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border); /* Borda mais grossa como nos cartões */
+  color: var(--text-primary);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 0.95rem;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  font-family: inherit;
 }
 
 .btn-google:hover {
-  background-color: #f9fafb;
+  border-color: var(--accent);
+  background: var(--bg-secondary); /* Mantém branco mas muda a borda */
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
 }
 
+.btn-google:active {
+  transform: translateY(0);
+}
+
+/* ===== FOOTER LINKS ===== */
 .auth-footer {
   text-align: center;
-  margin-top: 1.5rem;
+  margin-top: 1.75rem;
   font-size: 0.9rem;
   color: var(--text-secondary);
 }
@@ -156,16 +189,48 @@ input:focus {
   color: var(--accent);
   text-decoration: none;
   font-weight: 600;
+  transition: color 0.2s;
+}
+
+.auth-footer a:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
 }
 
 /* ===== ERRORS ===== */
 .error-message {
   background: #fff5f5;
-  color: #c53030;
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  margin-bottom: 1rem;
-  font-size: 0.85rem;
+  color: var(--danger);
+  padding: 0.875rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
   border: 1px solid #feb2b2;
   text-align: center;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsividade Mobile */
+@media (max-width: 480px) {
+  .auth-container {
+    border-radius: 12px;
+  }
+  
+  .auth-header {
+    padding: 2rem 1.5rem 1rem;
+  }
+  
+  .auth-body {
+    padding: 0 1.5rem 2rem;
+  }
 }
