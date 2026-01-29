@@ -46,7 +46,7 @@ export function showLoading(show) {
 
 // ===== LOAD USER DATA FROM FIREBASE =====
 export async function loadUserData() {
-  console.log('📥 Carregando dados do usuário...');
+  console.log('🔥 Carregando dados do usuário...');
   
   try {
     const userDocRef = doc(db, 'users', appState.user.uid);
@@ -56,6 +56,18 @@ export async function loadUserData() {
       appState.userData = userDoc.data();
       appState.stats = appState.userData.stats || appState.stats;
       appState.settings = appState.userData.settings || appState.settings;
+      
+      // CARREGAR CONTADOR DO DIA ATUAL
+      const today = new Date().toISOString().split('T')[0];
+      const studyHistory = appState.userData.studyHistory || {};
+      
+      if (studyHistory[today]) {
+        appState.stats.studiedToday = studyHistory[today].cards || 0;
+        console.log('📊 Cards estudados hoje:', appState.stats.studiedToday);
+      } else {
+        appState.stats.studiedToday = 0;
+        console.log('📊 Nenhum card estudado hoje ainda');
+      }
       
       console.log('✅ Dados do usuário carregados');
       
@@ -100,7 +112,7 @@ export async function loadUserData() {
   } catch (error) {
     console.error('❌ Erro ao carregar dados:', error);
     console.error('Detalhes do erro:', error.message);
-    throw error; // Re-throw para o initApp capturar
+    throw error;
   }
 }
 
@@ -111,8 +123,9 @@ export async function saveStats() {
     await updateDoc(userDocRef, {
       stats: appState.stats
     });
+    console.log('✅ Stats salvos:', appState.stats);
   } catch (error) {
-    console.error('Erro ao salvar stats:', error);
+    console.error('❌ Erro ao salvar stats:', error);
   }
 }
 
@@ -143,9 +156,16 @@ export async function saveStudyToHistory(correct) {
 
   try {
     const userDoc = await getDoc(userRef);
+    
+    if (!userDoc.exists()) {
+      console.error('❌ Documento do usuário não existe!');
+      return;
+    }
+    
     const userData = userDoc.data();
     const studyHistory = userData.studyHistory || {};
 
+    // Inicializar entrada do dia se não existir
     if (!studyHistory[today]) {
       studyHistory[today] = {
         cards: 0,
@@ -155,20 +175,24 @@ export async function saveStudyToHistory(correct) {
       };
     }
 
-    studyHistory[today].cards += 1;
+    // Incrementar contadores
+    studyHistory[today].cards = (studyHistory[today].cards || 0) + 1;
+    
     if (correct) {
-      studyHistory[today].correct += 1;
+      studyHistory[today].correct = (studyHistory[today].correct || 0) + 1;
     } else {
-      studyHistory[today].wrong += 1;
+      studyHistory[today].wrong = (studyHistory[today].wrong || 0) + 1;
     }
 
+    // Salvar no Firebase
     await updateDoc(userRef, {
       studyHistory: studyHistory
     });
 
     console.log('✅ Histórico atualizado:', studyHistory[today]);
   } catch (error) {
-    console.error('Erro ao salvar histórico:', error);
+    console.error('❌ Erro ao salvar histórico:', error);
+    console.error('Detalhes:', error.message);
   }
 }
 

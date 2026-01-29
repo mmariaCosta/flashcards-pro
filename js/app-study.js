@@ -1,7 +1,7 @@
 // ===== IMPORTS =====
 import { appState, isCardDue, saveStats, saveStudyToHistory } from './app-init.js';
 import { db } from './firebase-config.js';
-import { doc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { doc, updateDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 // ===== START STUDY =====
 export function startStudy(deckId) {
@@ -257,41 +257,39 @@ function getLanguageCode(folderName) {
     'Sérvio': 'sr-RS',
     'Eslovaco': 'sk-SK',
     'Esloveno': 'sl-SI',
+    'Lituano': 'lt-LT',
+    'Letão': 'lv-LV',
+    'Estoniano': 'et-EE',
+    'Macedônio': 'mk-MK',
+    'Albanês': 'sq-AL',
     
-    // Idiomas Europeus (Sul)
+    // Idiomas do Sul e Sudeste da Europa
     'Grego': 'el-GR',
     'Catalão': 'ca-ES',
-    'Galego': 'gl-ES',
     'Basco': 'eu-ES',
+    'Galego': 'gl-ES',
     
     // Idiomas Africanos
     'Africâner': 'af-ZA',
     'Swahili': 'sw-KE',
+    'Suaíli': 'sw-KE',
     'Zulu': 'zu-ZA',
     'Xhosa': 'xh-ZA',
     'Amárico': 'am-ET',
     
-    // Outros Idiomas Latinos
-    'Latim': 'la',
-    
-    // Variações Regionais
-    'Inglês Britânico': 'en-GB',
-    'Inglês Americano': 'en-US',
-    'Inglês Australiano': 'en-AU',
-    'Espanhol Mexicano': 'es-MX',
-    'Espanhol Argentino': 'es-AR',
-    'Português Europeu': 'pt-PT',
-    'Português Brasileiro': 'pt-BR',
-    'Francês Canadense': 'fr-CA'
+    // Outros
+    'Esperanto': 'eo',
+    'Latim': 'la'
   };
 
-  // Busca exata
+  const normalizedFolder = folderName.toLowerCase().trim();
+  
+  // Busca direta
   if (languageMap[folderName]) {
     return languageMap[folderName];
   }
-
-  // Busca parcial (case insensitive)
-  const normalizedFolder = folderName.toLowerCase();
+  
+  // Busca parcial
   for (const [key, value] of Object.entries(languageMap)) {
     if (key.toLowerCase().includes(normalizedFolder) || normalizedFolder.includes(key.toLowerCase())) {
       return value;
@@ -388,7 +386,10 @@ export async function rateCard(rating) {
   const now = new Date();
   const today = now.toISOString().split('T')[0];
 
-  // Salvar no histórico
+  // 1. ATUALIZAR CONTADOR DE CARDS DO DIA PRIMEIRO
+  appState.stats.studiedToday++;
+
+  // 2. SALVAR NO HISTÓRICO IMEDIATAMENTE
   const wasCorrect = rating >= 3;
   await saveStudyToHistory(wasCorrect);
 
@@ -421,9 +422,7 @@ export async function rateCard(rating) {
     appState.stats.totalCorrect++;
   }
 
-  // 🔥 LÓGICA CORRIGIDA DO STREAK
-  appState.stats.studiedToday++;
-  
+  // 🔥 LÓGICA DO STREAK
   const lastStudy = appState.stats.lastStudyDate;
   
   console.log('🔥 ANTES - Streak:', appState.stats.streak, '| Last Study:', lastStudy, '| Today:', today);
@@ -467,23 +466,29 @@ export async function rateCard(rating) {
   
   console.log('🔥 DEPOIS - Streak:', appState.stats.streak, '| Last Study:', appState.stats.lastStudyDate);
 
-  // Salvar no Firebase
+  // 3. SALVAR TUDO NO FIREBASE
   try {
+    // Salvar deck atualizado
     const deckDocRef = doc(db, 'users', appState.user.uid, 'decks', appState.currentDeck.id);
     await updateDoc(deckDocRef, {
       cards: originalDeck.cards
     });
     
+    // Salvar stats
     await saveStats();
-    await saveDailyStudy(appState.stats.studiedToday);
-
+    
+    // Salvar histórico diário CORRIGIDO
+    await saveDailyStudy();
+    
+    console.log('✅ Dados salvos no Firebase com sucesso!');
     
     // Atualizar dashboard
     const event = new CustomEvent('renderDashboard');
     document.dispatchEvent(event);
     
   } catch (error) {
-    console.error('Erro ao salvar progresso:', error);
+    console.error('❌ Erro ao salvar progresso:', error);
+    alert('⚠️ Erro ao salvar progresso. Seus dados podem não ter sido salvos.');
   }
 
   // Próximo card ou finalizar
@@ -494,23 +499,47 @@ export async function rateCard(rating) {
   }
 }
 
-// ===== SALVAR HISTÓRICO DIÁRIO =====
-async function saveDailyStudy(cardsStudied) {
+// ===== SALVAR HISTÓRICO DIÁRIO - VERSÃO CORRIGIDA =====
+async function saveDailyStudy() {
   const today = new Date().toISOString().split('T')[0];
 
   try {
     const userRef = doc(db, 'users', appState.user.uid);
+    const userDoc = await getDoc(userRef);
+    
+    if (!userDoc.exists()) {
+      console.error('❌ Documento do usuário não existe!');
+      return;
+    }
 
+    const userData = userDoc.data();
+    const studyHistory = userData.studyHistory || {};
+
+    // Inicializar ou atualizar entrada do dia
+    if (!studyHistory[today]) {
+      studyHistory[today] = {
+        cards: 0,
+        correct: 0,
+        wrong: 0,
+        date: today
+      };
+    }
+
+    // Atualizar contadores
+    studyHistory[today].cards = appState.stats.studiedToday;
+    studyHistory[today].correct = appState.stats.totalCorrect;
+    studyHistory[today].wrong = appState.stats.totalWrong;
+    studyHistory[today].lastUpdate = new Date().toISOString();
+
+    // Salvar no Firebase
     await updateDoc(userRef, {
-      [`studyHistory.${today}`]: {
-        cards: cardsStudied,
-        lastUpdate: new Date().toISOString()
-      }
+      studyHistory: studyHistory
     });
 
-    console.log('📊 Histórico diário salvo:', today, cardsStudied);
+    console.log('📊 Histórico diário ATUALIZADO:', today, studyHistory[today]);
   } catch (err) {
     console.error('❌ Erro ao salvar histórico diário:', err);
+    console.error('Detalhes:', err.message);
   }
 }
 

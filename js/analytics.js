@@ -63,7 +63,7 @@ function getDateString(daysAgo) {
 
 function getDayName(dateStr) {
   const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  const date = new Date(dateStr + 'T12:00:00'); // Meio-dia para evitar problemas de timezone
+  const date = new Date(dateStr + 'T12:00:00');
   return days[date.getDay()];
 }
 
@@ -126,7 +126,6 @@ function calculateStats(data) {
       totalCards += item.cards;
     }
     
-    // Contagem baseada na meta
     if (item.cards > userGoal) {
       above++;
     } else if (item.cards >= (userGoal * 0.75) && item.cards > 0) {
@@ -136,17 +135,16 @@ function calculateStats(data) {
     }
   });
 
-  // Cálculo de taxas
   const completionRate = studied > 0 ? Math.round((totalCards / (data.length * userGoal)) * 100) : 0;
   const consistency = Math.round((studied / data.length) * 100);
-  const accuracy = 80; // Pode ser calculado baseado em dados reais de acertos
+  const accuracy = 80;
 
   return {
     above,
     average,
     below,
     goal: userGoal,
-    completionRate: Math.min(completionRate, 100), // Limita a 100%
+    completionRate: Math.min(completionRate, 100),
     consistency,
     accuracy,
     studied,
@@ -169,7 +167,6 @@ function updateStatusCards(stats) {
   if (ringTexts[1]) ringTexts[1].textContent = `${stats.consistency}%`;
   if (ringTexts[2]) ringTexts[2].textContent = `${stats.accuracy}%`;
   
-  // Atualiza descrições
   const descriptions = document.querySelectorAll('.progress-card p');
   if (descriptions[0]) {
     descriptions[0].textContent = `Você completou ${stats.completionRate}% dos seus estudos planejados`;
@@ -195,13 +192,14 @@ function animateRings() {
   });
 }
 
-// ===== CARREGAMENTO DE DADOS =====
+// ===== CARREGAMENTO DE DADOS - VERSÃO CORRIGIDA =====
 async function loadData(view) {
+  console.log('📊 Carregando dados do analytics...');
+  
   const days = view === 'week' ? 7 : 30;
   let data = generateSampleData(days);
   let useRealData = false;
 
-  // Tenta carregar dados reais
   if (currentUser) {
     try {
       const userRef = doc(db, 'users', currentUser.uid);
@@ -211,19 +209,31 @@ async function loadData(view) {
         const userData = userDoc.data();
         const history = userData.studyHistory || {};
         
-        // Atualiza meta do usuário
-        if (userData.meta) {
+        console.log('📚 Dados do usuário carregados');
+        console.log('  Histórico:', Object.keys(history).length, 'dias');
+        
+        // ✅ CORRIGIDO: Buscar meta de múltiplas fontes
+        if (userData.metaDiaria) {
+          userGoal = parseInt(userData.metaDiaria) || 20;
+          console.log('  Meta (metaDiaria):', userGoal);
+        } else if (userData.meta) {
           userGoal = parseInt(userData.meta) || 20;
+          console.log('  Meta (meta):', userGoal);
+        } else if (userData.settings && userData.settings.newCardsPerDay) {
+          userGoal = parseInt(userData.settings.newCardsPerDay) || 20;
+          console.log('  Meta (settings):', userGoal);
         }
         
-        // Verifica se tem dados suficientes
+        // ✅ CORRIGIDO: Mostrar dados reais se tiver QUALQUER histórico (não precisa de 3 dias)
         const historyKeys = Object.keys(history);
-        if (historyKeys.length >= 3) {
-          // Tem dados reais
+        if (historyKeys.length >= 1) {
+          console.log('✅ Usando dados reais!');
           data = [];
+          
           for (let i = days - 1; i >= 0; i--) {
             const dateStr = getDateString(-i);
             const dayData = history[dateStr] || { cards: 0 };
+            
             data.push({
               day: days === 7 ? getDayName(dateStr) : new Date(dateStr + 'T12:00:00').getDate().toString().padStart(2, '0'),
               cards: dayData.cards || 0,
@@ -231,37 +241,51 @@ async function loadData(view) {
               date: dateStr
             });
           }
+          
           useRealData = true;
+          
+          // Log detalhado dos dados
+          console.log('📊 Dados carregados:');
+          data.forEach(d => {
+            if (d.cards > 0) {
+              console.log(`  ${d.date}: ${d.cards} cards`);
+            }
+          });
+        } else {
+          console.log('⚠️ Nenhum histórico encontrado - usando dados de exemplo');
         }
         
-        // Atualiza nome do usuário
+        // Atualizar nome
         const userNameEl = document.getElementById('userName');
         if (userNameEl && userData.nome) {
           userNameEl.textContent = userData.nome;
         }
       }
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      console.error('❌ Erro ao carregar dados:', error);
     }
+  } else {
+    console.log('⚠️ Usuário não autenticado - usando dados de exemplo');
   }
 
-  // Renderiza
+  // Renderizar
   renderChart(data);
   
-  // Calcula stats dos últimos 30 dias (sempre)
+  // Calcular stats dos últimos 30 dias
   const monthData = useRealData && days === 30 ? data : (useRealData ? await loadMonthDataForStats() : generateSampleData(30));
   updateStatusCards(calculateStats(monthData));
   animateRings();
 
-  // Mostra banner se for dados de exemplo
+  // Banner
   if (!useRealData) {
     showSampleBanner();
   } else {
     removeSampleBanner();
   }
+  
+  console.log('✅ Analytics carregado!');
 }
 
-// Carrega dados de 30 dias quando a view é de 7 dias
 async function loadMonthDataForStats() {
   const data = [];
   if (currentUser) {
@@ -340,7 +364,7 @@ window.changeView = async function(view) {
 async function init() {
   console.log('📊 Analytics iniciando...');
   
-  // Carrega dados iniciais IMEDIATAMENTE com dados de exemplo
+  // Carrega dados de exemplo IMEDIATAMENTE
   await loadData('week');
   
   // Verifica autenticação em background
