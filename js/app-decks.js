@@ -207,16 +207,30 @@ export async function deleteDeck(deckId) {
 export async function deleteFolder(folderId, folderName) {
   const decksInFolder = appState.decks.filter(d => d.folder === folderName);
   
+  let message = `Deseja realmente excluir a pasta "${folderName}"?`;
+  
   if (decksInFolder.length > 0) {
-    alert(`⚠️ Não é possível excluir a pasta "${folderName}".\n\nExistem ${decksInFolder.length} deck(s) nesta pasta.\n\nRemova ou mova os decks antes de excluir a pasta.`);
-    return;
+    message = `A pasta "${folderName}" contém ${decksInFolder.length} deck(s).\n\n` +
+              `O que deseja fazer?\n\n` +
+              `✅ OK = Excluir apenas a pasta (os cards ficarão sem pasta)\n` +
+              `❌ Cancelar = Não fazer nada`;
   }
   
-  if (!confirm(`Deseja realmente excluir a pasta "${folderName}"?`)) return;
+  if (!confirm(message)) return;
   
   showLoading(true);
   
   try {
+    // Remove a pasta de todos os decks
+    if (decksInFolder.length > 0) {
+      for (const deck of decksInFolder) {
+        await updateDoc(doc(db, 'users', appState.user.uid, 'decks', deck.id), {
+          folder: ''
+        });
+      }
+    }
+    
+    // Deleta a pasta
     await deleteDoc(doc(db, 'users', appState.user.uid, 'folders', folderId));
     await loadUserData();
     
@@ -224,11 +238,70 @@ export async function deleteFolder(folderId, folderName) {
     document.dispatchEvent(event);
     
     showLoading(false);
-    alert('✅ Pasta excluída!');
+    
+    if (decksInFolder.length > 0) {
+      alert(`✅ Pasta excluída!\n\n${decksInFolder.length} deck(s) movido(s) para "Sem pasta".`);
+    } else {
+      alert('✅ Pasta excluída!');
+    }
   } catch (error) {
     console.error('Erro ao excluir pasta:', error);
     showLoading(false);
     alert('Erro ao excluir pasta.');
+  }
+}
+
+// ===== EDIT FOLDER =====
+export async function editFolder(folderId, oldFolderName) {
+  const newFolderName = prompt('Digite o novo nome da pasta:', oldFolderName);
+  
+  if (!newFolderName || newFolderName.trim() === '') {
+    return; // Cancelou ou deixou vazio
+  }
+  
+  const trimmedName = newFolderName.trim();
+  
+  // Verifica se o nome já existe
+  if (trimmedName !== oldFolderName) {
+    const folderExists = appState.folders.some(f => f.name === trimmedName && f.id !== folderId);
+    if (folderExists) {
+      alert(`⚠️ Já existe uma pasta com o nome "${trimmedName}".\n\nEscolha outro nome.`);
+      return;
+    }
+  }
+  
+  if (trimmedName === oldFolderName) {
+    alert('ℹ️ O nome não foi alterado.');
+    return;
+  }
+  
+  showLoading(true);
+  
+  try {
+    // Atualiza o nome da pasta
+    await updateDoc(doc(db, 'users', appState.user.uid, 'folders', folderId), {
+      name: trimmedName
+    });
+    
+    // Atualiza todos os decks que usam essa pasta
+    const decksInFolder = appState.decks.filter(d => d.folder === oldFolderName);
+    for (const deck of decksInFolder) {
+      await updateDoc(doc(db, 'users', appState.user.uid, 'decks', deck.id), {
+        folder: trimmedName
+      });
+    }
+    
+    await loadUserData();
+    
+    const event = new CustomEvent('renderAll');
+    document.dispatchEvent(event);
+    
+    showLoading(false);
+    alert(`✅ Pasta renomeada!\n\n"${oldFolderName}" → "${trimmedName}"`);
+  } catch (error) {
+    console.error('Erro ao editar pasta:', error);
+    showLoading(false);
+    alert('Erro ao editar pasta.');
   }
 }
 

@@ -1,6 +1,6 @@
 // ===== CONFIGURAÇÃO FIREBASE =====
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -21,6 +21,39 @@ let currentView = 'week';
 let currentUser = null;
 let userGoal = 20;
 
+// ===== MENU TOGGLE =====
+const menuToggle = document.getElementById('menuToggle');
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('overlay');
+
+if (menuToggle && sidebar) {
+  menuToggle.addEventListener('click', () => {
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+  });
+
+  overlay.addEventListener('click', () => {
+    sidebar.classList.remove('active');
+    overlay.classList.remove('active');
+  });
+}
+
+// ===== LOGOUT =====
+const logoutBtn = document.getElementById('logoutBtn');
+if (logoutBtn) {
+  logoutBtn.addEventListener('click', async () => {
+    if (confirm('Deseja realmente sair?')) {
+      try {
+        await signOut(auth);
+        window.location.href = 'login.html';
+      } catch (error) {
+        console.error('Erro ao sair:', error);
+        alert('Erro ao sair. Tente novamente.');
+      }
+    }
+  });
+}
+
 // ===== FUNÇÕES AUXILIARES =====
 function getDateString(daysAgo) {
   const date = new Date();
@@ -30,7 +63,7 @@ function getDateString(daysAgo) {
 
 function getDayName(dateStr) {
   const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  const date = new Date(dateStr + 'T00:00:00');
+  const date = new Date(dateStr + 'T12:00:00'); // Meio-dia para evitar problemas de timezone
   return days[date.getDay()];
 }
 
@@ -38,11 +71,11 @@ function generateSampleData(days) {
   const data = [];
   for (let i = days - 1; i >= 0; i--) {
     const dateStr = getDateString(-i);
-    const cards = Math.floor(Math.random() * 20) + 10;
+    const cards = Math.floor(Math.random() * 25) + 5;
     data.push({
-      day: days === 7 ? getDayName(dateStr) : new Date(dateStr + 'T00:00:00').getDate().toString().padStart(2, '0'),
+      day: days === 7 ? getDayName(dateStr) : new Date(dateStr + 'T12:00:00').getDate().toString().padStart(2, '0'),
       cards: cards,
-      goal: 20,
+      goal: userGoal,
       date: dateStr
     });
   }
@@ -55,14 +88,15 @@ function renderChart(data) {
   if (!container) return;
 
   container.innerHTML = '';
-  const maxCards = Math.max(...data.map(d => d.cards), 20);
+  const maxCards = Math.max(...data.map(d => d.cards), userGoal);
 
   data.forEach(item => {
     const barItem = document.createElement('div');
     barItem.className = 'bar-item';
 
     const bar = document.createElement('div');
-    const barClass = item.cards > 20 ? 'above' : item.cards >= 15 ? 'average' : 'below';
+    const barClass = item.cards > userGoal ? 'above' : 
+                     item.cards >= (userGoal * 0.75) ? 'average' : 'below';
     bar.className = `bar ${barClass}`;
     bar.style.height = `${Math.max((item.cards / maxCards) * 100, 5)}%`;
     bar.title = `${item.date}: ${item.cards} cartões`;
@@ -82,6 +116,44 @@ function renderChart(data) {
   });
 }
 
+function calculateStats(data) {
+  let above = 0, average = 0, below = 0, studied = 0;
+  let totalCards = 0;
+  
+  data.forEach(item => {
+    if (item.cards > 0) {
+      studied++;
+      totalCards += item.cards;
+    }
+    
+    // Contagem baseada na meta
+    if (item.cards > userGoal) {
+      above++;
+    } else if (item.cards >= (userGoal * 0.75) && item.cards > 0) {
+      average++;
+    } else if (item.cards > 0) {
+      below++;
+    }
+  });
+
+  // Cálculo de taxas
+  const completionRate = studied > 0 ? Math.round((totalCards / (data.length * userGoal)) * 100) : 0;
+  const consistency = Math.round((studied / data.length) * 100);
+  const accuracy = 80; // Pode ser calculado baseado em dados reais de acertos
+
+  return {
+    above,
+    average,
+    below,
+    goal: userGoal,
+    completionRate: Math.min(completionRate, 100), // Limita a 100%
+    consistency,
+    accuracy,
+    studied,
+    totalCards
+  };
+}
+
 function updateStatusCards(stats) {
   document.getElementById('daysAbove').textContent = stats.above;
   document.getElementById('daysAverage').textContent = stats.average;
@@ -93,9 +165,18 @@ function updateStatusCards(stats) {
   updateProgressRing('.progress-card:nth-child(3) .ring-progress', stats.accuracy);
 
   const ringTexts = document.querySelectorAll('.ring-text');
-  ringTexts[0].textContent = `${stats.completionRate}%`;
-  ringTexts[1].textContent = `${stats.consistency}%`;
-  ringTexts[2].textContent = `${stats.accuracy}%`;
+  if (ringTexts[0]) ringTexts[0].textContent = `${stats.completionRate}%`;
+  if (ringTexts[1]) ringTexts[1].textContent = `${stats.consistency}%`;
+  if (ringTexts[2]) ringTexts[2].textContent = `${stats.accuracy}%`;
+  
+  // Atualiza descrições
+  const descriptions = document.querySelectorAll('.progress-card p');
+  if (descriptions[0]) {
+    descriptions[0].textContent = `Você completou ${stats.completionRate}% dos seus estudos planejados`;
+  }
+  if (descriptions[1]) {
+    descriptions[1].textContent = `Você estudou em ${stats.studied} dos últimos 30 dias`;
+  }
 }
 
 function updateProgressRing(selector, percentage) {
@@ -104,27 +185,6 @@ function updateProgressRing(selector, percentage) {
   const circumference = 502.4;
   const offset = circumference - (percentage / 100) * circumference;
   ring.style.strokeDashoffset = offset;
-}
-
-function calculateStats(data) {
-  let above = 0, average = 0, below = 0, studied = 0;
-  
-  data.forEach(item => {
-    if (item.cards > 0) studied++;
-    if (item.cards > 20) above++;
-    else if (item.cards >= 15) average++;
-    else if (item.cards > 0) below++;
-  });
-
-  return {
-    above,
-    average,
-    below,
-    goal: 20,
-    completionRate: Math.round((studied / data.length) * 100),
-    consistency: Math.round((studied / 30) * 100),
-    accuracy: 80
-  };
 }
 
 function animateRings() {
@@ -149,32 +209,47 @@ async function loadData(view) {
       
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        const history = userData.studyHistory;
+        const history = userData.studyHistory || {};
         
-        if (history && Object.keys(history).length >= 3) {
+        // Atualiza meta do usuário
+        if (userData.meta) {
+          userGoal = parseInt(userData.meta) || 20;
+        }
+        
+        // Verifica se tem dados suficientes
+        const historyKeys = Object.keys(history);
+        if (historyKeys.length >= 3) {
           // Tem dados reais
           data = [];
           for (let i = days - 1; i >= 0; i--) {
             const dateStr = getDateString(-i);
             const dayData = history[dateStr] || { cards: 0 };
             data.push({
-              day: days === 7 ? getDayName(dateStr) : new Date(dateStr + 'T00:00:00').getDate().toString().padStart(2, '0'),
+              day: days === 7 ? getDayName(dateStr) : new Date(dateStr + 'T12:00:00').getDate().toString().padStart(2, '0'),
               cards: dayData.cards || 0,
-              goal: 20,
+              goal: userGoal,
               date: dateStr
             });
           }
           useRealData = true;
         }
+        
+        // Atualiza nome do usuário
+        const userNameEl = document.getElementById('userName');
+        if (userNameEl && userData.nome) {
+          userNameEl.textContent = userData.nome;
+        }
       }
     } catch (error) {
-      console.log('Usando dados de exemplo');
+      console.error('Erro ao carregar dados:', error);
     }
   }
 
   // Renderiza
   renderChart(data);
-  const monthData = useRealData ? data : generateSampleData(30);
+  
+  // Calcula stats dos últimos 30 dias (sempre)
+  const monthData = useRealData && days === 30 ? data : (useRealData ? await loadMonthDataForStats() : generateSampleData(30));
   updateStatusCards(calculateStats(monthData));
   animateRings();
 
@@ -184,6 +259,37 @@ async function loadData(view) {
   } else {
     removeSampleBanner();
   }
+}
+
+// Carrega dados de 30 dias quando a view é de 7 dias
+async function loadMonthDataForStats() {
+  const data = [];
+  if (currentUser) {
+    try {
+      const userRef = doc(db, 'users', currentUser.uid);
+      const userDoc = await getDoc(userRef);
+      
+      if (userDoc.exists()) {
+        const history = userDoc.data().studyHistory || {};
+        
+        for (let i = 29; i >= 0; i--) {
+          const dateStr = getDateString(-i);
+          const dayData = history[dateStr] || { cards: 0 };
+          data.push({
+            day: new Date(dateStr + 'T12:00:00').getDate().toString().padStart(2, '0'),
+            cards: dayData.cards || 0,
+            goal: userGoal,
+            date: dateStr
+          });
+        }
+        return data;
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados do mês:', error);
+    }
+  }
+  
+  return generateSampleData(30);
 }
 
 function showSampleBanner() {
@@ -234,15 +340,15 @@ window.changeView = async function(view) {
 async function init() {
   console.log('📊 Analytics iniciando...');
   
-  // Carrega dados iniciais IMEDIATAMENTE
+  // Carrega dados iniciais IMEDIATAMENTE com dados de exemplo
   await loadData('week');
   
   // Verifica autenticação em background
-  onAuthStateChanged(auth, (user) => {
+  onAuthStateChanged(auth, async (user) => {
     currentUser = user;
     if (user) {
       console.log('✅ Usuário:', user.email);
-      loadData(currentView); // Recarrega com dados reais
+      await loadData(currentView); // Recarrega com dados reais
     } else {
       console.log('ℹ️ Sem login - mostrando dados de exemplo');
     }

@@ -5,155 +5,218 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#000000">
   <title>Análise de Estudos - Flashcards Pro</title>
+  <link rel="stylesheet" href="css/app.css">
   <link rel="stylesheet" href="css/analytics.css">
 </head>
 <body>
 
-  <!-- Botão Voltar -->
-  <div style="padding: 1rem; max-width: 1400px; margin: 0 auto;">
-    <button onclick="window.location.href='app.html'" style="
-      background: var(--bg-primary);
-      border: 2px solid var(--border);
-      padding: 0.75rem 1.5rem;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: all 0.2s;
-    " onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
-      ← Voltar ao App
-    </button>
-  </div>
+  <div class="overlay" id="overlay"></div>
 
-  <div class="container">
-    
-    <!-- Header -->
-    <div class="page-header">
-      <h1>📊 Análise de Estudos</h1>
-      <p>Acompanhe seu desempenho e progresso detalhado</p>
+  <!-- Menu Toggle Button -->
+  <button class="menu-toggle" id="menuToggle">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+
+  <!-- Sidebar Menu -->
+  <aside class="sidebar" id="sidebar">
+    <div class="logo">
+      <h1>📚 Flashcards Pro</h1>
+      <p id="userName" class="user-name">Carregando...</p>
     </div>
 
-    <!-- Status Cards -->
-    <div class="status-grid">
-      <div class="status-card above">
-        <div class="status-header">
-          <span class="status-icon">🔥</span>
-          <div class="status-info">
-            <h3>Dias Acima da Meta</h3>
-          </div>
-        </div>
-        <div class="status-value" id="daysAbove">0</div>
-        <div class="status-subtitle">Últimos 30 dias</div>
+    <nav class="nav">
+      <div class="nav-section">
+        <div class="nav-section-title">Menu</div>
+        <button class="nav-btn" onclick="window.location.href='app.html'">
+          <span>📊</span>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-btn" onclick="window.location.href='app.html'">
+          <span>📖</span>
+          <span>Estudar</span>
+        </button>
+        <button class="nav-btn" onclick="window.location.href='app.html'">
+          <span>🎴</span>
+          <span>Meus Cards</span>
+        </button>
+        <button class="nav-btn" onclick="window.location.href='app.html'">
+          <span>📕</span>
+          <span>Cards de Exemplo</span>
+        </button>
+        <button class="nav-btn" onclick="window.location.href='app.html'">
+          <span>📁</span>
+          <span>Pastas</span>
+        </button>
       </div>
 
-      <div class="status-card average">
-        <div class="status-header">
-          <span class="status-icon">⚡</span>
-          <div class="status-info">
-            <h3>Dias na Média</h3>
-          </div>
-        </div>
-        <div class="status-value" id="daysAverage">0</div>
-        <div class="status-subtitle">Últimos 30 dias</div>
+      <div class="nav-section">
+        <div class="nav-section-title">Criar</div>
+        <button class="nav-btn" onclick="window.location.href='app.html'">
+          <span>➕</span>
+          <span>Novo Card</span>
+        </button>
       </div>
 
-      <div class="status-card below">
-        <div class="status-header">
-          <span class="status-icon">📉</span>
-          <div class="status-info">
-            <h3>Dias Abaixo da Meta</h3>
-          </div>
-        </div>
-        <div class="status-value" id="daysBelow">0</div>
-        <div class="status-subtitle">Últimos 30 dias</div>
+      <div class="nav-section">
+        <div class="nav-section-title">Análise</div>
+        <button class="nav-btn active">
+          <span>📊</span>
+          <span>Estatísticas</span>
+        </button>
+      </div>
+      
+      <div class="nav-section">
+        <div class="nav-section-title">Configurações</div>
+        <button class="nav-btn" onclick="window.location.href='app.html'">
+          <span>⚙️</span>
+          <span>Configurações</span>
+        </button>
+        <button class="nav-btn" id="logoutBtn">
+          <span>🚪</span>
+          <span>Sair</span>
+        </button>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container">
+      
+      <!-- Header -->
+      <div class="page-header">
+        <h1>📊 Análise de Estudos</h1>
+        <p>Acompanhe seu desempenho e progresso detalhado</p>
       </div>
 
-      <div class="status-card">
-        <div class="status-header">
-          <span class="status-icon">🎯</span>
-          <div class="status-info">
-            <h3>Meta Diária</h3>
+      <!-- Status Cards -->
+      <div class="status-grid">
+        <div class="status-card above">
+          <div class="status-header">
+            <span class="status-icon">🔥</span>
+            <div class="status-info">
+              <h3>Dias Acima da Meta</h3>
+            </div>
+          </div>
+          <div class="status-value" id="daysAbove">0</div>
+          <div class="status-subtitle">Últimos 30 dias</div>
+        </div>
+
+        <div class="status-card average">
+          <div class="status-header">
+            <span class="status-icon">⚡</span>
+            <div class="status-info">
+              <h3>Dias na Média</h3>
+            </div>
+          </div>
+          <div class="status-value" id="daysAverage">0</div>
+          <div class="status-subtitle">Últimos 30 dias</div>
+        </div>
+
+        <div class="status-card below">
+          <div class="status-header">
+            <span class="status-icon">📉</span>
+            <div class="status-info">
+              <h3>Dias Abaixo da Meta</h3>
+            </div>
+          </div>
+          <div class="status-value" id="daysBelow">0</div>
+          <div class="status-subtitle">Últimos 30 dias</div>
+        </div>
+
+        <div class="status-card">
+          <div class="status-header">
+            <span class="status-icon">🎯</span>
+            <div class="status-info">
+              <h3>Meta Diária</h3>
+            </div>
+          </div>
+          <div class="status-value" id="dailyGoal">20</div>
+          <div class="status-subtitle">cartões por dia</div>
+        </div>
+      </div>
+
+      <!-- Bar Chart -->
+      <div class="chart-container">
+        <div class="chart-header">
+          <h2>Últimos 7 Dias</h2>
+          <div class="chart-controls">
+            <button class="chart-btn active" onclick="changeView('week')">7 dias</button>
+            <button class="chart-btn" onclick="changeView('month')">30 dias</button>
           </div>
         </div>
-        <div class="status-value" id="dailyGoal">20</div>
-        <div class="status-subtitle">cartões por dia</div>
+
+        <div class="bar-chart" id="barChart">
+          <!-- Será preenchido pelo JavaScript -->
+        </div>
+
+        <div class="chart-legend">
+          <div class="legend-item">
+            <div class="legend-color above"></div>
+            <span class="legend-text">Acima da meta (>20 cartões)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color average"></div>
+            <span class="legend-text">Na média (15-20 cartões)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color below"></div>
+            <span class="legend-text">Abaixo da meta (<15 cartões)</span>
+          </div>
+        </div>
       </div>
+
+      <!-- Progress Rings -->
+      <div class="progress-section">
+        <div class="progress-card">
+          <div class="progress-ring">
+            <svg class="ring-svg" width="180" height="180">
+              <circle class="ring-background" cx="90" cy="90" r="80"/>
+              <circle class="ring-progress success" cx="90" cy="90" r="80" 
+                      stroke-dasharray="502.4" stroke-dashoffset="125.6"/>
+            </svg>
+            <div class="ring-text">75%</div>
+          </div>
+          <h3>Taxa de Conclusão</h3>
+          <p>Você completou 75% dos seus estudos planejados</p>
+        </div>
+
+        <div class="progress-card">
+          <div class="progress-ring">
+            <svg class="ring-svg" width="180" height="180">
+              <circle class="ring-background" cx="90" cy="90" r="80"/>
+              <circle class="ring-progress warning" cx="90" cy="90" r="80" 
+                      stroke-dasharray="502.4" stroke-dashoffset="150.72"/>
+            </svg>
+            <div class="ring-text">70%</div>
+          </div>
+          <h3>Consistência</h3>
+          <p>Você estudou em 21 dos últimos 30 dias</p>
+        </div>
+
+        <div class="progress-card">
+          <div class="progress-ring">
+            <svg class="ring-svg" width="180" height="180">
+              <circle class="ring-background" cx="90" cy="90" r="80"/>
+              <circle class="ring-progress success" cx="90" cy="90" r="80" 
+                      stroke-dasharray="502.4" stroke-dashoffset="100.48"/>
+            </svg>
+            <div class="ring-text">80%</div>
+          </div>
+          <h3>Acurácia</h3>
+          <p>Taxa de acerto nas revisões</p>
+        </div>
+      </div>
+
     </div>
+  </main>
 
-    <!-- Bar Chart -->
-    <div class="chart-container">
-      <div class="chart-header">
-        <h2>Últimos 7 Dias</h2>
-        <div class="chart-controls">
-          <button class="chart-btn active" onclick="changeView('week')">7 dias</button>
-          <button class="chart-btn" onclick="changeView('month')">30 dias</button>
-        </div>
-      </div>
-
-      <div class="bar-chart" id="barChart">
-        <!-- Será preenchido pelo JavaScript -->
-      </div>
-
-      <div class="chart-legend">
-        <div class="legend-item">
-          <div class="legend-color above"></div>
-          <span class="legend-text">Acima da meta (>20 cartões)</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color average"></div>
-          <span class="legend-text">Na média (15-20 cartões)</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color below"></div>
-          <span class="legend-text">Abaixo da meta (<15 cartões)</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Progress Rings -->
-    <div class="progress-section">
-      <div class="progress-card">
-        <div class="progress-ring">
-          <svg class="ring-svg" width="180" height="180">
-            <circle class="ring-background" cx="90" cy="90" r="80"/>
-            <circle class="ring-progress success" cx="90" cy="90" r="80" 
-                    stroke-dasharray="502.4" stroke-dashoffset="125.6"/>
-          </svg>
-          <div class="ring-text">75%</div>
-        </div>
-        <h3>Taxa de Conclusão</h3>
-        <p>Você completou 75% dos seus estudos planejados</p>
-      </div>
-
-      <div class="progress-card">
-        <div class="progress-ring">
-          <svg class="ring-svg" width="180" height="180">
-            <circle class="ring-background" cx="90" cy="90" r="80"/>
-            <circle class="ring-progress warning" cx="90" cy="90" r="80" 
-                    stroke-dasharray="502.4" stroke-dashoffset="150.72"/>
-          </svg>
-          <div class="ring-text">70%</div>
-        </div>
-        <h3>Consistência</h3>
-        <p>Você estudou em 21 dos últimos 30 dias</p>
-      </div>
-
-      <div class="progress-card">
-        <div class="progress-ring">
-          <svg class="ring-svg" width="180" height="180">
-            <circle class="ring-background" cx="90" cy="90" r="80"/>
-            <circle class="ring-progress success" cx="90" cy="90" r="80" 
-                    stroke-dasharray="502.4" stroke-dashoffset="100.48"/>
-          </svg>
-          <div class="ring-text">80%</div>
-        </div>
-        <h3>Acurácia</h3>
-        <p>Taxa de acerto nas revisões</p>
-      </div>
-    </div>
-
+  <!-- Loading Overlay -->
+  <div id="loading" class="loading-overlay" style="display: none;">
+    <div class="spinner"></div>
+    <p>Carregando...</p>
   </div>
 
   <!-- Firebase e Scripts -->
@@ -161,6 +224,19 @@
   <script type="module" src="js/analytics.js"></script>
 
   <style>
+    /* Ajustes específicos para analytics */
+    .main-content {
+      margin-left: 280px;
+      padding: 2rem;
+    }
+
+    @media (max-width: 768px) {
+      .main-content {
+        margin-left: 0;
+        padding: 1rem;
+      }
+    }
+
     /* Loading Overlay */
     .loading-overlay {
       position: fixed;

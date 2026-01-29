@@ -22,7 +22,6 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
   background: var(--bg-secondary);
-  padding: 2rem;
 }
 
 .container {
@@ -404,4 +403,16 @@ body {
   .legend-text {
     font-size: 0.75rem;
   }
+}
+/* ===== AJUSTES PARA INTEGRAÇÃO COM SIDEBAR ===== */
+.main-content .container {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Info banner ajustada */
+.info-banner {
+  animation: slideDown 0.3s ease;
+  margin-bottom: 1.5rem;
 }

@@ -386,13 +386,13 @@ function levenshteinDistance(str1, str2) {
 export async function rateCard(rating) {
   const card = appState.currentDeck.cards[appState.currentCardIndex];
   const now = new Date();
+  const today = now.toISOString().split('T')[0];
 
   // Salvar no histórico
   const wasCorrect = rating >= 3;
   await saveStudyToHistory(wasCorrect);
 
   const originalDeck = appState.decks.find(d => d.id === appState.currentDeck.id);
-  const today = now.toISOString().split('T')[0];
   const originalCard = originalDeck.cards.find(c => c.id === card.id);
 
   originalCard.history.push({
@@ -421,31 +421,51 @@ export async function rateCard(rating) {
     appState.stats.totalCorrect++;
   }
 
-  // Atualizar stats
+  // 🔥 LÓGICA CORRIGIDA DO STREAK
   appState.stats.studiedToday++;
   
   const lastStudy = appState.stats.lastStudyDate;
   
-  if (!lastStudy || lastStudy !== today) {
-    if (lastStudy) {
-      const lastDate = new Date(lastStudy + 'T00:00:00');
-      const todayDate = new Date(today + 'T00:00:00');
-      const diffDays = Math.floor((todayDate - lastDate) / (1000 * 60 * 60 * 24));
-      
-      if (diffDays === 1) {
-        appState.stats.streak++;
-        console.log('🔥 Sequência incrementada:', appState.stats.streak);
-      } else if (diffDays > 1) {
-        appState.stats.streak = 1;
-        console.log('🆕 Nova sequência iniciada');
-      }
-    } else {
-      appState.stats.streak = 1;
-      console.log('🎯 Primeira sequência!');
-    }
-    
+  console.log('🔥 ANTES - Streak:', appState.stats.streak, '| Last Study:', lastStudy, '| Today:', today);
+  
+  // Se NUNCA estudou antes, inicia sequência
+  if (!lastStudy) {
+    appState.stats.streak = 1;
     appState.stats.lastStudyDate = today;
+    console.log('🎯 Primeira sequência iniciada! Streak = 1');
   }
+  // Se o último estudo NÃO foi hoje
+  else if (lastStudy !== today) {
+    const lastDate = new Date(lastStudy + 'T00:00:00');
+    const todayDate = new Date(today + 'T00:00:00');
+    const diffDays = Math.floor((todayDate - lastDate) / (1000 * 60 * 60 * 24));
+    
+    console.log('📅 Diferença de dias:', diffDays);
+    
+    // Se estudou ONTEM (diferença de 1 dia) - INCREMENTA
+    if (diffDays === 1) {
+      appState.stats.streak++;
+      appState.stats.lastStudyDate = today;
+      console.log('🔥 Sequência incrementada! Novo streak:', appState.stats.streak);
+    }
+    // Se passou MAIS de 1 dia - RESETA para 1
+    else if (diffDays > 1) {
+      appState.stats.streak = 1;
+      appState.stats.lastStudyDate = today;
+      console.log('🆕 Sequência quebrada! Reiniciando streak = 1');
+    }
+    // Se diffDays <= 0 (não deveria acontecer, mas por segurança)
+    else {
+      appState.stats.lastStudyDate = today;
+      console.log('⚠️ Data inconsistente, mantendo streak:', appState.stats.streak);
+    }
+  }
+  // Se JÁ estudou hoje - mantém tudo
+  else {
+    console.log('✅ Já estudou hoje - mantém streak:', appState.stats.streak);
+  }
+  
+  console.log('🔥 DEPOIS - Streak:', appState.stats.streak, '| Last Study:', appState.stats.lastStudyDate);
 
   // Salvar no Firebase
   try {
@@ -498,7 +518,7 @@ function finishStudySession() {
   const cardsStudied = appState.currentDeck.cards.length;
   const accuracy = Math.round((appState.stats.totalCorrect / (appState.stats.totalCorrect + appState.stats.totalWrong)) * 100) || 0;
   
-  alert(`🎉 Parabéns!\n\nSessão concluída!\n\n📊 Estatísticas:\n• ${cardsStudied} cartões\n• Acerto: ${accuracy}%\n• Sequência: ${appState.stats.streak} dias`);
+  alert(`🎉 Parabéns!\n\nSessão concluída!\n\n📊 Estatísticas:\n• ${cardsStudied} cartões\n• Acerto: ${accuracy}%\n• 🔥 Sequência: ${appState.stats.streak} dias`);
   
   const event1 = new CustomEvent('showView', { detail: { view: 'dashboard' } });
   document.dispatchEvent(event1);

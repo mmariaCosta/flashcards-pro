@@ -20,6 +20,7 @@ import {
   saveDeck, 
   deleteDeck,
   deleteFolder,
+  editFolder,
   editCard,
   deleteCard,
   renderExampleDecks,
@@ -255,6 +256,7 @@ window.app = {
   
   // Folders
   closeFolderModal,
+  editFolder,
   
   // Settings
   saveSettings,
@@ -278,6 +280,9 @@ document.addEventListener('startStudy', (e) => {
 
 document.addEventListener('deleteFolder', (e) => {
   deleteFolder(e.detail.folderId, e.detail.folderName);
+});
+document.addEventListener("editFolder", (e) => {
+  editFolder(e.detail.folderId, e.detail.folderName);
 });
 
 document.addEventListener('flipCard', flipCard);

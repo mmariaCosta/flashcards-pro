@@ -286,6 +286,7 @@ export function renderFolders() {
         <button class="btn btn-primary" style="flex: 1;">
           👁️ Ver Cartões
         </button>
+        <button class="btn btn-secondary" style="padding: 0.75rem 1rem;" title="Editar pasta">✏️</button>
         <button class="btn btn-secondary danger" style="padding: 0.75rem 1rem;" title="Excluir pasta">
           🗑️
         </button>
@@ -297,6 +298,12 @@ export function renderFolders() {
       viewFolderCards(folder.name);
     };
 
+
+    card.querySelectorAll(".btn-secondary")[0].onclick = (e) => {
+      e.stopPropagation();
+      const event = new CustomEvent("editFolder", { detail: { folderId: folder.id, folderName: folder.name } });
+      document.dispatchEvent(event);
+    };
     card.querySelector('.danger').onclick = (e) => {
       e.stopPropagation();
       const event = new CustomEvent('deleteFolder', { detail: { folderId: folder.id, folderName: folder.name } });
@@ -307,25 +314,13 @@ export function renderFolders() {
   });
 }
 
-// ===== VIEW FOLDER CARDS =====
+
+// ===== VIEW FOLDER CARDS - VERSÃO SEPARADA POR DECK =====
 export function viewFolderCards(folderName) {
   const decksInFolder = appState.decks.filter(d => d.folder === folderName);
-  const allCards = [];
   
-  decksInFolder.forEach(deck => {
-    if (deck.cards) {
-      deck.cards.forEach(card => {
-        allCards.push({
-          ...card,
-          deckName: deck.name,
-          deckId: deck.id
-        });
-      });
-    }
-  });
-
-  if (allCards.length === 0) {
-    alert('Esta pasta não contém cartões ainda.');
+  if (decksInFolder.length === 0) {
+    alert('Esta pasta não contém decks ainda.');
     return;
   }
 
@@ -335,44 +330,105 @@ export function viewFolderCards(folderName) {
   
   if (!modal || !modalTitle || !modalContent) return;
   
-  modalTitle.textContent = `Cartões da Pasta: ${folderName}`;
+  modalTitle.textContent = `📁 ${folderName} - ${decksInFolder.length} deck(s)`;
   
-  modalContent.innerHTML = `
-    <div style="display: grid; gap: 1rem;">
-      ${allCards.map((card, i) => `
-        <div style="background: var(--bg-primary); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border);">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; align-items: center;">
-            <div>
-              <strong style="color: var(--text-secondary); font-size: 0.875rem;">${card.deckName}</strong>
-              <span style="color: var(--text-muted); font-size: 0.875rem; margin-left: 1rem;">Nível ${card.level || 0}</span>
-            </div>
-            <div style="display: flex; gap: 0.5rem;">
-              <button class="btn btn-secondary" onclick="app.editCard('${card.deckId}', ${card.id})" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
-                ✏️ Editar
-              </button>
-              <button class="btn btn-secondary danger" onclick="app.deleteCard('${card.deckId}', ${card.id})" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
-                🗑️
-              </button>
-            </div>
+  // Agrupa cards por deck
+  let htmlContent = '<div style="display: grid; gap: 2rem;">';
+  
+  decksInFolder.forEach(deck => {
+    const dueCount = deck.cards?.filter(card => isCardDue(card)).length || 0;
+    const totalCards = deck.cards?.length || 0;
+    
+    htmlContent += `
+      <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; border: 2px solid var(--border);">
+        <!-- Cabeçalho do Deck -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2px solid var(--border);">
+          <div>
+            <h3 style="margin: 0; font-size: 1.25rem; color: var(--text-primary);">
+              📚 ${deck.name}
+            </h3>
+            <p style="margin: 0.5rem 0 0 0; color: var(--text-secondary); font-size: 0.875rem;">
+              ${deck.description || 'Sem descrição'}
+            </p>
           </div>
-          <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 1.5rem; align-items: center;">
-            <div>
-              <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--text-secondary);">🇧🇷 Português:</div>
-              <div style="font-size: 1.1rem;">${card.front}</div>
+          <div style="display: flex; gap: 1rem; align-items: center;">
+            <div style="text-align: center;">
+              <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent);">${totalCards}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">total</div>
             </div>
-            <div style="font-size: 1.5rem; color: var(--text-muted);">→</div>
-            <div>
-              <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--text-secondary);">🌍 ${folderName}:</div>
-              <div style="font-size: 1.1rem; color: var(--accent);">${card.back}</div>
+            <div style="text-align: center;">
+              <div style="font-size: 1.5rem; font-weight: 700; color: var(--warning);">${dueCount}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">pendentes</div>
             </div>
+            <button class="btn btn-primary" onclick="app.startStudy('${deck.id}')" style="padding: 0.75rem 1.5rem;">
+              📖 Estudar
+            </button>
           </div>
         </div>
-      `).join('')}
-    </div>
-  `;
+        
+        <!-- Cards do Deck -->
+        <div style="display: grid; gap: 1rem;">
+    `;
+    
+    if (!deck.cards || deck.cards.length === 0) {
+      htmlContent += `
+        <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">📭</div>
+          <p>Nenhum cartão neste deck ainda</p>
+        </div>
+      `;
+    } else {
+      deck.cards.forEach(card => {
+        const isDue = isCardDue(card);
+        const statusColor = isDue ? 'var(--warning)' : 'var(--success)';
+        const statusText = isDue ? '⏰ Revisar' : '✅ Em dia';
+        
+        htmlContent += `
+          <div style="background: var(--bg-primary); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--border); transition: all 0.2s;" 
+               onmouseover="this.style.borderColor='var(--accent)'" 
+               onmouseout="this.style.borderColor='var(--border)'">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; align-items: center;">
+              <div style="display: flex; gap: 1rem; align-items: center;">
+                <span style="color: ${statusColor}; font-size: 0.75rem; font-weight: 600;">${statusText}</span>
+                <span style="color: var(--text-muted); font-size: 0.75rem;">Nível ${card.level || 0}</span>
+              </div>
+              <div style="display: flex; gap: 0.5rem;">
+                <button class="btn btn-secondary" onclick="app.editCard('${deck.id}', ${card.id})" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                  ✏️ Editar
+                </button>
+                <button class="btn btn-secondary danger" onclick="app.deleteCard('${deck.id}', ${card.id})" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                  🗑️
+                </button>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 1.5rem; align-items: center;">
+              <div>
+                <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.875rem;">🇧🇷 Português:</div>
+                <div style="font-size: 1.05rem;">${card.front}</div>
+              </div>
+              <div style="font-size: 1.5rem; color: var(--text-muted);">→</div>
+              <div>
+                <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.875rem;">🌍 ${deck.language || folderName}:</div>
+                <div style="font-size: 1.05rem; color: var(--accent); font-weight: 500;">${card.back}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    }
+    
+    htmlContent += `
+        </div>
+      </div>
+    `;
+  });
   
+  htmlContent += '</div>';
+  
+  modalContent.innerHTML = htmlContent;
   modal.style.display = 'flex';
 }
+
 
 export function closeFolderModal() {
   const modal = document.getElementById('folderCardsModal');
