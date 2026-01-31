@@ -313,10 +313,10 @@ export async function editCard(deckId, cardId) {
   const card = deck.cards.find(c => c.id === cardId);
   if (!card) return;
   
-  const newFront = prompt('Editar PORTUGUÊS (frente):', card.front);
+  const newFront = prompt('Editar IDIOMA ESTRANGEIRO (frente):', card.front);
   if (newFront === null) return; // Cancelou
   
-  const newBack = prompt('Editar IDIOMA (verso):', card.back);
+  const newBack = prompt('Editar PORTUGUÊS (verso):', card.back);
   if (newBack === null) return; // Cancelou
   
   if (!newFront.trim() || !newBack.trim()) {
@@ -455,8 +455,8 @@ export async function importExampleDeck(deckKey) {
     
     const cards = exampleDeck.cards.map((card, i) => ({
       id: Date.now() + i,
-      front: card.back,
-      back: card.front,
+      front: card.front,
+      back: card.back,
       level: 0,
       nextReview: new Date().toISOString(),
       history: [],
