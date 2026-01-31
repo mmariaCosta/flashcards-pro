@@ -6,17 +6,8 @@ import {
   getDoc, 
   updateDoc,
   collection,
-  getDocs,
-  increment
+  getDocs
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-
-// Função auxiliar para pegar a data local correta (AAAA-MM-DD)
-export function getLocalDate() {
-  const now = new Date();
-  const offset = now.getTimezoneOffset() * 60000;
-  const localDate = new Date(now.getTime() - offset);
-  return localDate.toISOString().split('T')[0];
-}
 
 // ===== APP STATE =====
 export const appState = {
@@ -156,37 +147,58 @@ export async function saveSettings() {
   }
 }
 
-// ===== SAVE STUDY HISTORY (CORRIGIDO) =====
+// ===== SAVE STUDY HISTORY =====
 export async function saveStudyToHistory(correct) {
   if (!appState.user) return;
 
-  const today = getLocalDate(); // Usa a data local corrigida
+  const today = new Date().toISOString().split('T')[0];
   const userRef = doc(db, 'users', appState.user.uid);
 
   try {
-    // Cria o objeto de atualização usando "Dot Notation" para não sobrescrever o dia todo
-    const updateData = {
-      [`studyHistory.${today}.cards`]: increment(1), // Soma +1 atomicamente
-      [`studyHistory.${today}.date`]: today,
-      [`studyHistory.${today}.lastUpdate`]: new Date().toISOString()
-    };
+    const userDoc = await getDoc(userRef);
+    
+    if (!userDoc.exists()) {
+      console.error('❌ Documento do usuário não existe!');
+      return;
+    }
+    
+    const userData = userDoc.data();
+    const studyHistory = userData.studyHistory || {};
 
-    if (correct) {
-      updateData[`studyHistory.${today}.correct`] = increment(1);
-    } else {
-      updateData[`studyHistory.${today}.wrong`] = increment(1);
+    // Inicializar entrada do dia se não existir
+    if (!studyHistory[today]) {
+      studyHistory[today] = {
+        cards: 0,
+        correct: 0,
+        wrong: 0,
+        date: today
+      };
     }
 
-    await updateDoc(userRef, updateData);
-    console.log('✅ Histórico atualizado no Firebase (Otimizado)');
+    // Incrementar contadores
+    studyHistory[today].cards = (studyHistory[today].cards || 0) + 1;
+    
+    if (correct) {
+      studyHistory[today].correct = (studyHistory[today].correct || 0) + 1;
+    } else {
+      studyHistory[today].wrong = (studyHistory[today].wrong || 0) + 1;
+    }
+
+    // Salvar no Firebase
+    await updateDoc(userRef, {
+      studyHistory: studyHistory
+    });
+
+    console.log('✅ Histórico atualizado:', studyHistory[today]);
   } catch (error) {
     console.error('❌ Erro ao salvar histórico:', error);
+    console.error('Detalhes:', error.message);
   }
 }
 
 // ===== UPDATE STREAK =====
 export function updateStreak() {
-  const today = getLocalDate();
+  const today = new Date().toISOString().split('T')[0];
   const lastStudy = appState.stats.lastStudyDate;
 
   console.log('🔄 Verificando sequência...');

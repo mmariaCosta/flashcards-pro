@@ -1,18 +1,26 @@
 // ===== CONFIGURAÇÃO FIREBASE =====
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { getApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyD1A2k13tEZtKJdmRE3o0MXEvCULFHSUcs",
-  authDomain: "flashcards-28a9e.firebaseapp.com",
-  projectId: "flashcards-28a9e",
-  storageBucket: "flashcards-28a9e.firebasestorage.app",
-  messagingSenderId: "93390501016",
-  appId: "1:93390501016:web:b4caddacc434ce68074ced"
-};
+// ✅ USA O APP JÁ INICIALIZADO (não reinicializa!)
+let app;
+try {
+  app = getApp(); // Tenta pegar o app existente
+} catch (error) {
+  // Se não existir, importa e inicializa
+  const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
+  const firebaseConfig = {
+    apiKey: "AIzaSyD1A2k13tEZtKJdmRE3o0MXEvCULFHSUcs",
+    authDomain: "flashcards-28a9e.firebaseapp.com",
+    projectId: "flashcards-28a9e",
+    storageBucket: "flashcards-28a9e.firebasestorage.app",
+    messagingSenderId: "93390501016",
+    appId: "1:93390501016:web:b4caddacc434ce68074ced"
+  };
+  app = initializeApp(firebaseConfig);
+}
 
-const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -57,12 +65,8 @@ if (logoutBtn) {
 // ===== FUNÇÕES AUXILIARES =====
 function getDateString(daysAgo) {
   const date = new Date();
-  // Ajuste de fuso horário para garantir o dia correto localmente
-  const offset = date.getTimezoneOffset() * 60000;
-  const localDate = new Date(date.getTime() - offset);
-  
-  localDate.setDate(localDate.getDate() + daysAgo);
-  return localDate.toISOString().split('T')[0];
+  date.setDate(date.getDate() + daysAgo);
+  return date.toISOString().split('T')[0];
 }
 
 function getDayName(dateStr) {
@@ -196,7 +200,7 @@ function animateRings() {
   });
 }
 
-// ===== CARREGAMENTO DE DADOS - VERSÃO CORRIGIDA =====
+// ===== CARREGAMENTO DE DADOS =====
 async function loadData(view) {
   console.log('📊 Carregando dados do analytics...');
   
@@ -216,7 +220,7 @@ async function loadData(view) {
         console.log('📚 Dados do usuário carregados');
         console.log('  Histórico:', Object.keys(history).length, 'dias');
         
-        // ✅ CORRIGIDO: Buscar meta de múltiplas fontes
+        // Buscar meta de múltiplas fontes
         if (userData.metaDiaria) {
           userGoal = parseInt(userData.metaDiaria) || 20;
           console.log('  Meta (metaDiaria):', userGoal);
@@ -228,7 +232,7 @@ async function loadData(view) {
           console.log('  Meta (settings):', userGoal);
         }
         
-        // ✅ CORRIGIDO: Mostrar dados reais se tiver QUALQUER histórico (não precisa de 3 dias)
+        // Mostrar dados reais se tiver QUALQUER histórico
         const historyKeys = Object.keys(history);
         if (historyKeys.length >= 1) {
           console.log('✅ Usando dados reais!');
