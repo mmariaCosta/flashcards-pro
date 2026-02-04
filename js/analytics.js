@@ -27,7 +27,7 @@ const db = getFirestore(app);
 // ===== ESTADO GLOBAL =====
 let currentView = 'week';
 let currentUser = null;
-let userGoal = 20; // Meta padrão
+let userGoal = 20;
 
 // ===== MENU TOGGLE =====
 const menuToggle = document.getElementById('menuToggle');
@@ -90,73 +90,19 @@ function generateSampleData(days) {
   return data;
 }
 
-// ===== 🔥 CARREGAR META DO USUÁRIO =====
-async function loadUserGoal() {
-  if (!currentUser) {
-    console.log('⚠️ Sem usuário - usando meta padrão:', userGoal);
-    return userGoal;
-  }
-
-  try {
-    const userRef = doc(db, 'users', currentUser.uid);
-    const userDoc = await getDoc(userRef);
-    
-    if (userDoc.exists()) {
-      const userData = userDoc.data();
-      
-      // 🎯 ORDEM DE PRIORIDADE PARA BUSCAR A META:
-      // 1º - settings.newCardsPerDay (configurações do app)
-      // 2º - metaDiaria (cadastro)
-      // 3º - meta (cadastro antigo)
-      // 4º - 20 (padrão)
-      
-      if (userData.settings?.newCardsPerDay) {
-        userGoal = parseInt(userData.settings.newCardsPerDay);
-        console.log('📊 Meta carregada de settings.newCardsPerDay:', userGoal);
-      } else if (userData.metaDiaria) {
-        userGoal = parseInt(userData.metaDiaria);
-        console.log('📊 Meta carregada de metaDiaria:', userGoal);
-      } else if (userData.meta) {
-        userGoal = parseInt(userData.meta);
-        console.log('📊 Meta carregada de meta:', userGoal);
-      } else {
-        console.log('⚠️ Meta não encontrada - usando padrão:', userGoal);
-      }
-      
-      // Validação: meta entre 1 e 100
-      if (isNaN(userGoal) || userGoal < 1) {
-        userGoal = 20;
-        console.log('⚠️ Meta inválida - resetando para 20');
-      } else if (userGoal > 100) {
-        userGoal = 100;
-        console.log('⚠️ Meta muito alta - limitando a 100');
-      }
-    }
-  } catch (error) {
-    console.error('❌ Erro ao carregar meta:', error);
-  }
-  
-  return userGoal;
-}
-
-// ===== 🎨 RENDERIZAÇÃO DO GRÁFICO (PROPORCIONAL) =====
+// ===== RENDERIZAÇÃO =====
 function renderChart(data) {
   const container = document.getElementById('barChart');
   if (!container) return;
 
   container.innerHTML = '';
   
-  // 🔥 CALCULA O VALOR MÁXIMO REAL DOS DADOS
-  const maxCardsInData = Math.max(...data.map(d => d.cards));
+  // ✅ PEGA APENAS O MAIOR VALOR DOS DADOS (não inclui userGoal no cálculo)
+  const maxCards = Math.max(...data.map(d => d.cards), 1);
   
-  // Define a escala: o maior valor entre os dados reais e a meta
-  // Isso garante que a meta sempre apareça como referência
-  const scaleMax = Math.max(maxCardsInData, userGoal);
-  
-  console.log('📊 Renderizando gráfico:');
-  console.log('  Valor máximo nos dados:', maxCardsInData);
+  console.log('📊 GRÁFICO:');
+  console.log('  Valor máximo:', maxCards);
   console.log('  Meta:', userGoal);
-  console.log('  Escala usada:', scaleMax);
 
   data.forEach(item => {
     const barItem = document.createElement('div');
@@ -164,32 +110,30 @@ function renderChart(data) {
 
     const bar = document.createElement('div');
     
-    // 🎨 Classificação das barras
+    // Determinar cor baseada na meta
     const barClass = item.cards > userGoal ? 'above' : 
                      item.cards >= (userGoal * 0.75) ? 'average' : 'below';
     bar.className = `bar ${barClass}`;
     
-    // 🔥 ALTURA PROPORCIONAL AO VALOR REAL
-    // Altura = (valor_do_dia / valor_máximo_da_escala) * 100%
-    const heightPercent = item.cards > 0 
-      ? (item.cards / scaleMax) * 100 
-      : 0;
+    // ✅ CÁLCULO CORRETO DA ALTURA
+    let heightPercent;
+    if (item.cards === 0) {
+      heightPercent = 3; // Barra visível mas pequena para 0
+    } else {
+      // Altura proporcional ao valor máximo, com mínimo de 10%
+      heightPercent = Math.max((item.cards / maxCards) * 100, 10);
+    }
     
-    // Altura mínima de 8% para barras com valor > 0 (para visualização)
-    const finalHeight = item.cards > 0 
-      ? Math.max(heightPercent, 8) 
-      : 3; // Barras vazias ficam bem pequenas
+    bar.style.height = `${heightPercent}%`;
+    bar.title = `${item.date}: ${item.cards} cartões`;
     
-    bar.style.height = `${finalHeight}%`;
-    bar.title = `${item.date}: ${item.cards} cartões (Meta: ${userGoal})`;
+    console.log(`  ${item.day}: ${item.cards} cards → ${heightPercent.toFixed(1)}%`);
 
-    // 📊 Valor em cima da barra
     const barValue = document.createElement('div');
     barValue.className = 'bar-value';
     barValue.textContent = item.cards;
     bar.appendChild(barValue);
 
-    // 📅 Label do dia
     const label = document.createElement('div');
     label.className = 'bar-label';
     label.textContent = item.day;
@@ -200,7 +144,6 @@ function renderChart(data) {
   });
 }
 
-// ===== 📊 CÁLCULO DE ESTATÍSTICAS =====
 function calculateStats(data) {
   let above = 0, average = 0, below = 0, studied = 0;
   let totalCards = 0;
@@ -211,7 +154,6 @@ function calculateStats(data) {
       totalCards += item.cards;
     }
     
-    // Classificação baseada na meta do usuário
     if (item.cards > userGoal) {
       above++;
     } else if (item.cards >= (userGoal * 0.75) && item.cards > 0) {
@@ -223,7 +165,7 @@ function calculateStats(data) {
 
   const completionRate = studied > 0 ? Math.round((totalCards / (data.length * userGoal)) * 100) : 0;
   const consistency = Math.round((studied / data.length) * 100);
-  const accuracy = 80; // Placeholder - pode ser calculado dos dados reais
+  const accuracy = 80;
 
   return {
     above,
@@ -238,26 +180,21 @@ function calculateStats(data) {
   };
 }
 
-// ===== 🎯 ATUALIZAR CARDS DE STATUS =====
 function updateStatusCards(stats) {
-  // Atualiza números
   document.getElementById('daysAbove').textContent = stats.above;
   document.getElementById('daysAverage').textContent = stats.average;
   document.getElementById('daysBelow').textContent = stats.below;
   document.getElementById('dailyGoal').textContent = stats.goal;
 
-  // Atualiza anéis de progresso
   updateProgressRing('.progress-card:nth-child(1) .ring-progress', stats.completionRate);
   updateProgressRing('.progress-card:nth-child(2) .ring-progress', stats.consistency);
   updateProgressRing('.progress-card:nth-child(3) .ring-progress', stats.accuracy);
 
-  // Atualiza textos dos anéis
   const ringTexts = document.querySelectorAll('.ring-text');
   if (ringTexts[0]) ringTexts[0].textContent = `${stats.completionRate}%`;
   if (ringTexts[1]) ringTexts[1].textContent = `${stats.consistency}%`;
   if (ringTexts[2]) ringTexts[2].textContent = `${stats.accuracy}%`;
   
-  // Atualiza descrições
   const descriptions = document.querySelectorAll('.progress-card p');
   if (descriptions[0]) {
     descriptions[0].textContent = `Você completou ${stats.completionRate}% dos seus estudos planejados`;
@@ -265,22 +202,8 @@ function updateStatusCards(stats) {
   if (descriptions[1]) {
     descriptions[1].textContent = `Você estudou em ${stats.studied} dos últimos 30 dias`;
   }
-  
-  // 🔥 ATUALIZA LEGENDA COM VALORES DINÂMICOS
-  updateLegend();
 }
 
-// ===== 🎨 ATUALIZAR LEGENDA DO GRÁFICO =====
-function updateLegend() {
-  const legendItems = document.querySelectorAll('.legend-text');
-  if (legendItems.length >= 3) {
-    legendItems[0].textContent = `Acima da meta (>${userGoal} cartões)`;
-    legendItems[1].textContent = `Na média (${Math.ceil(userGoal * 0.75)}-${userGoal} cartões)`;
-    legendItems[2].textContent = `Abaixo da meta (<${Math.ceil(userGoal * 0.75)} cartões)`;
-  }
-}
-
-// ===== 🎭 ANIMAÇÃO DOS ANÉIS =====
 function updateProgressRing(selector, percentage) {
   const ring = document.querySelector(selector);
   if (!ring) return;
@@ -297,12 +220,9 @@ function animateRings() {
   });
 }
 
-// ===== 📥 CARREGAMENTO DE DADOS =====
+// ===== CARREGAMENTO DE DADOS =====
 async function loadData(view) {
   console.log('📊 Carregando dados do analytics...');
-  
-  // 🔥 CARREGA A META PRIMEIRO
-  await loadUserGoal();
   
   const days = view === 'week' ? 7 : 30;
   let data = generateSampleData(days);
@@ -319,6 +239,18 @@ async function loadData(view) {
         
         console.log('📚 Dados do usuário carregados');
         console.log('  Histórico:', Object.keys(history).length, 'dias');
+        
+        // Buscar meta de múltiplas fontes
+        if (userData.metaDiaria) {
+          userGoal = parseInt(userData.metaDiaria) || 20;
+          console.log('  Meta (metaDiaria):', userGoal);
+        } else if (userData.meta) {
+          userGoal = parseInt(userData.meta) || 20;
+          console.log('  Meta (meta):', userGoal);
+        } else if (userData.settings && userData.settings.newCardsPerDay) {
+          userGoal = parseInt(userData.settings.newCardsPerDay) || 20;
+          console.log('  Meta (settings):', userGoal);
+        }
         
         // Mostrar dados reais se tiver QUALQUER histórico
         const historyKeys = Object.keys(history);
@@ -412,7 +344,6 @@ async function loadMonthDataForStats() {
   return generateSampleData(30);
 }
 
-// ===== 🎨 BANNERS =====
 function showSampleBanner() {
   if (document.querySelector('.info-banner')) return;
   
@@ -442,7 +373,7 @@ function removeSampleBanner() {
   if (banner) banner.remove();
 }
 
-// ===== 🔄 TROCA DE VISUALIZAÇÃO =====
+// ===== TROCA DE VISUALIZAÇÃO =====
 window.changeView = async function(view) {
   currentView = view;
   
@@ -457,7 +388,7 @@ window.changeView = async function(view) {
   await loadData(view);
 };
 
-// ===== 🚀 INICIALIZAÇÃO =====
+// ===== INICIALIZAÇÃO =====
 async function init() {
   console.log('📊 Analytics iniciando...');
   
