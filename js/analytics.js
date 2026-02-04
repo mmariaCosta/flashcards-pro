@@ -96,18 +96,42 @@ function renderChart(data) {
   if (!container) return;
 
   container.innerHTML = '';
-  const maxCards = Math.max(...data.map(d => d.cards), userGoal);
+  
+  // ✅ PEGA APENAS O MAIOR VALOR DOS DADOS (não inclui userGoal no cálculo)
+  const maxCards = Math.max(...data.map(d => d.cards), 1);
+  
+  console.log('📊 GRÁFICO:');
+  console.log('  Valor máximo:', maxCards);
+  console.log('  Meta:', userGoal);
 
   data.forEach(item => {
     const barItem = document.createElement('div');
     barItem.className = 'bar-item';
 
     const bar = document.createElement('div');
+    
+    // Determinar cor baseada na meta
     const barClass = item.cards > userGoal ? 'above' : 
                      item.cards >= (userGoal * 0.75) ? 'average' : 'below';
     bar.className = `bar ${barClass}`;
+<<<<<<< HEAD
     bar.style.height = `${item.cards === 0 ? 0 : Math.max((item.cards / maxCards) * 100, 3)}%`;
+=======
+    
+    // ✅ CÁLCULO CORRETO DA ALTURA
+    let heightPercent;
+    if (item.cards === 0) {
+      heightPercent = 3; // Barra visível mas pequena para 0
+    } else {
+      // Altura proporcional ao valor máximo, com mínimo de 10%
+      heightPercent = Math.max((item.cards / maxCards) * 100, 10);
+    }
+    
+    bar.style.height = `${heightPercent}%`;
+>>>>>>> a373267ad719219e38f3a5f5fd1b120be51df5c7
     bar.title = `${item.date}: ${item.cards} cartões`;
+    
+    console.log(`  ${item.day}: ${item.cards} cards → ${heightPercent.toFixed(1)}%`);
 
     const barValue = document.createElement('div');
     barValue.className = 'bar-value';

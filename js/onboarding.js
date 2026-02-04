@@ -191,24 +191,37 @@ window.finalizarCadastro = async function() {
     // Criar plano de estudos personalizado
     const planoDeEstudos = gerarPlanoDeEstudos(userData);
 
+    // ✅ CRIAR SETTINGS COM DISTINÇÃO ENTRE NOVOS CARDS E REVISÕES
+    const settings = {
+      newCardsPerDay: userData.meta, // Meta de NOVOS cards
+      reviewsPerDay: userData.meta * 5, // Meta de REVISÕES (5x a meta de novos)
+      notificationsEnabled: false,
+      notificationTimes: ['09:00', '14:00', '19:00']
+    };
+
     // Salvar dados no Firestore
     await setDoc(doc(db, 'users', user.uid), {
       nome: userData.nome,
+      email: userData.email,
       idade: userData.idade,
       idiomas: userData.idiomas,
       objetivo: userData.objetivo,
       tempoDiario: userData.tempo,
-      metaDiaria: userData.meta,
+      metaDiaria: userData.meta, // Meta de novos cards
       motivacao: userData.motivacao,
       planoDeEstudos: planoDeEstudos,
+      settings: settings, // ✅ Salvando settings separadamente
       criadoEm: new Date().toISOString(),
       stats: {
         studiedToday: 0,
+        newCardsToday: 0, // ✅ Contador de novos cards
+        reviewsToday: 0,   // ✅ Contador de revisões
         totalCorrect: 0,
         totalWrong: 0,
         streak: 0,
         lastStudyDate: null
-      }
+      },
+      studyHistory: {} // ✅ Inicializar histórico vazio
     });
 
     // Redirecionar para o app
