@@ -106,7 +106,7 @@ function renderChart(data) {
     const barClass = item.cards > userGoal ? 'above' : 
                      item.cards >= (userGoal * 0.75) ? 'average' : 'below';
     bar.className = `bar ${barClass}`;
-    bar.style.height = `${Math.max((item.cards / maxCards) * 100, 5)}%`;
+    bar.style.height = `${item.cards === 0 ? 0 : Math.max((item.cards / maxCards) * 100, 3)}%`;
     bar.title = `${item.date}: ${item.cards} cartões`;
 
     const barValue = document.createElement('div');
