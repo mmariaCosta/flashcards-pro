@@ -208,10 +208,10 @@ export async function saveStudyToHistory(correct, isNewCard = false) {
     // ✅ Diferenciar novos cards de revisões
     if (isNewCard) {
       studyHistory[today].newCards = (studyHistory[today].newCards || 0) + 1;
-      appState.stats.newCardsToday++;
+      // ❌ REMOVIDO: appState.stats.newCardsToday++ (estava duplicando)
     } else {
       studyHistory[today].reviews = (studyHistory[today].reviews || 0) + 1;
-      appState.stats.reviewsToday++;
+      // ❌ REMOVIDO: appState.stats.reviewsToday++ (estava duplicando)
     }
     
     if (correct) {
