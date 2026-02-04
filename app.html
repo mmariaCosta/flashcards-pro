@@ -98,14 +98,29 @@
       </div>
 
       <div class="stats-grid">
+        <!-- Card 1: Novos Cards Hoje -->
         <div class="stat-card">
           <div class="stat-header">
-            <div class="stat-title">Hoje</div>
+            <div class="stat-title">🆕 Novos Hoje</div>
           </div>
-          <div class="stat-value" id="statToday">0</div>
-          <div class="stat-change">cartões estudados</div>
+          <div class="stat-value">
+            <span id="statNewCards">0</span>/<span id="statNewCardsGoal">20</span>
+          </div>
+          <div class="stat-change">novos cards estudados</div>
         </div>
 
+        <!-- Card 2: Revisões Hoje -->
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-title">🔄 Revisões Hoje</div>
+          </div>
+          <div class="stat-value">
+            <span id="statReviews">0</span>/<span id="statReviewsGoal">100</span>
+          </div>
+          <div class="stat-change">revisões feitas</div>
+        </div>
+
+        <!-- Card 3: Acertos -->
         <div class="stat-card">
           <div class="stat-header">
             <div class="stat-title">Acertos</div>
@@ -114,6 +129,7 @@
           <div class="stat-change">taxa de sucesso</div>
         </div>
 
+        <!-- Card 4: Sequência -->
         <div class="stat-card">
           <div class="stat-header">
             <div class="stat-title">Sequência</div>
@@ -121,15 +137,6 @@
           <div class="stat-value" id="statStreak">0</div>
           <div class="stat-change">dias consecutivos</div>
         </div>
-
-        <div class="stat-card">
-          <div class="stat-header">
-            <div class="stat-title">Cards</div>
-          </div>
-          <div class="stat-value" id="statDecks">0</div>
-          <div class="stat-change" id="statCards">0 cartões</div>
-        </div>
-      </div>
 
       <div class="page-header" style="margin-top: 2rem;">
         <h2>Revisões Pendentes</h2>

@@ -193,23 +193,25 @@ export function renderDashboard() {
   }
 
   // Estatísticas
-  const statToday = document.getElementById('statToday');
+  const statNewCards = document.getElementById('statNewCards');
+  const statNewCardsGoal = document.getElementById('statNewCardsGoal');
+  const statReviews = document.getElementById('statReviews');
+  const statReviewsGoal = document.getElementById('statReviewsGoal');
   const statAccuracy = document.getElementById('statAccuracy');
   const statStreak = document.getElementById('statStreak');
-  const statDecks = document.getElementById('statDecks');
-  const statCards = document.getElementById('statCards');
 
-  if (statToday) statToday.textContent = appState.stats.studiedToday;
+  // ✅ Mostrar novos cards e revisões separadamente
+  if (statNewCards) statNewCards.textContent = appState.stats.newCardsToday || 0;
+  if (statNewCardsGoal) statNewCardsGoal.textContent = appState.settings.newCardsPerDay || 20;
+  
+  if (statReviews) statReviews.textContent = appState.stats.reviewsToday || 0;
+  if (statReviewsGoal) statReviewsGoal.textContent = appState.settings.reviewsPerDay || 100;
   
   const total = appState.stats.totalCorrect + appState.stats.totalWrong;
   const accuracy = total > 0 ? Math.round((appState.stats.totalCorrect / total) * 100) : 0;
   if (statAccuracy) statAccuracy.textContent = accuracy + '%';
   
   if (statStreak) statStreak.textContent = appState.stats.streak;
-  if (statDecks) statDecks.textContent = appState.decks.length;
-  
-  const totalCards = appState.decks.reduce((sum, deck) => sum + (deck.cards?.length || 0), 0);
-  if (statCards) statCards.textContent = `${totalCards} cartões`;
 
   // Revisões pendentes
   const reviewContainer = document.getElementById('reviewCards');

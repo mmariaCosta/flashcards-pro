@@ -72,15 +72,17 @@ if (googleLoginBtn) {
       const userDoc = await getDoc(doc(db, 'users', user.uid));
 
       if (!userDoc.exists()) {
-        // Create basic profile for new Google user
+      // Create basic profile for new Google user
         await setDoc(doc(db, 'users', user.uid), {
           nome: user.displayName || 'Usuário',
           email: user.email,
           criadoEm: new Date().toISOString(),
+
           idiomas: ['Inglês'],
           objetivo: 'Estudar',
           tempoDiario: 10,
           metaDiaria: 10,
+
           planoDeEstudos: {
             titulo: 'Plano Básico',
             idiomas: ['Inglês'],
@@ -90,19 +92,23 @@ if (googleLoginBtn) {
               'Revise cards todos os dias'
             ]
           },
-          stats: {
-            studiedToday: 0,
-            totalCorrect: 0,
-            totalWrong: 0,
-            streak: 0,
-            lastStudyDate: null
-          },
+
+          studiedToday: 0,
+          newCardsToday: 0,
+          reviewsToday: 0,
+          totalCorrect: 0,
+          totalWrong: 0,
+          streak: 0,
+          lastStudyDate: null,
+
           settings: {
-            newCardsPerDay: 20,
-            reviewsPerDay: 100,
+            newCardsPerDay: 10,
+            reviewsPerDay: 50,
             notificationsEnabled: false,
             notificationTimes: ['09:00', '14:00', '19:00']
-          }
+          },
+
+          studyHistory: {}
         });
       }
 

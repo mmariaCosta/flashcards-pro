@@ -257,67 +257,54 @@ function getLanguageCode(folderName) {
     'Sérvio': 'sr-RS',
     'Eslovaco': 'sk-SK',
     'Esloveno': 'sl-SI',
-    'Lituano': 'lt-LT',
-    'Letão': 'lv-LV',
-    'Estoniano': 'et-EE',
-    'Macedônio': 'mk-MK',
-    'Albanês': 'sq-AL',
     
-    // Idiomas do Sul e Sudeste da Europa
-    'Grego': 'el-GR',
-    'Catalão': 'ca-ES',
-    'Basco': 'eu-ES',
-    'Galego': 'gl-ES',
-    
-    // Idiomas Africanos
-    'Africâner': 'af-ZA',
-    'Swahili': 'sw-KE',
-    'Suaíli': 'sw-KE',
-    'Zulu': 'zu-ZA',
-    'Xhosa': 'xh-ZA',
-    'Amárico': 'am-ET',
+    // Idiomas das Américas
+    'Português (BR)': 'pt-BR',
+    'Português (PT)': 'pt-PT',
+    'Espanhol (ES)': 'es-ES',
+    'Espanhol (MX)': 'es-MX',
+    'Espanhol (AR)': 'es-AR',
+    'Inglês (US)': 'en-US',
+    'Inglês (UK)': 'en-GB',
+    'Inglês (AU)': 'en-AU',
+    'Inglês (CA)': 'en-CA',
     
     // Outros
-    'Esperanto': 'eo',
-    'Latim': 'la'
+    'Grego': 'el-GR',
+    'Letão': 'lv-LV',
+    'Lituano': 'lt-LT',
+    'Estoniano': 'et-EE',
+    'Georgiano': 'ka-GE',
+    'Armênio': 'hy-AM',
+    'Azerbaijano': 'az-AZ',
+    'Cazaque': 'kk-KZ',
+    'Suaíli': 'sw-KE',
+    'Africâner': 'af-ZA',
+    'Zulu': 'zu-ZA',
+    'Catalão': 'ca-ES',
+    'Galego': 'gl-ES',
+    'Basco': 'eu-ES',
+    'Galês': 'cy-GB',
+    'Irlandês': 'ga-IE'
   };
 
-  const normalizedFolder = folderName.toLowerCase().trim();
-  
-  // Busca direta
-  if (languageMap[folderName]) {
-    return languageMap[folderName];
-  }
-  
-  // Busca parcial
-  for (const [key, value] of Object.entries(languageMap)) {
-    if (key.toLowerCase().includes(normalizedFolder) || normalizedFolder.includes(key.toLowerCase())) {
-      return value;
-    }
-  }
-
-  // Fallback para inglês
-  console.log(`⚠️ Idioma "${folderName}" não encontrado, usando inglês como padrão`);
-  return 'en-US';
+  return languageMap[folderName] || 'en-US';
 }
 
 // ===== FLIP CARD =====
 export function flipCard() {
-  if (appState.studyMode === 'typing' && !appState.isFlipped) {
-    checkTypedAnswer();
-  } else {
-    appState.isFlipped = !appState.isFlipped;
-    updateStudyCard();
-  }
+  appState.isFlipped = !appState.isFlipped;
+  updateStudyCard();
 }
 
 // ===== CHECK TYPED ANSWER =====
 export function checkTypedAnswer() {
-  const input = document.getElementById('typingInput');
-  if (!input) return;
-  
-  const userAnswer = input.value.trim().toLowerCase();
   const card = appState.currentDeck.cards[appState.currentCardIndex];
+  const typingInput = document.getElementById('typingInput');
+  
+  if (!typingInput) return;
+
+  const userAnswer = typingInput.value.trim().toLowerCase();
   const correctAnswer = card.back.toLowerCase();
 
   const similarity = calculateSimilarity(userAnswer, correctAnswer);
@@ -386,15 +373,36 @@ export async function rateCard(rating) {
   const now = new Date();
   const today = now.toISOString().split('T')[0];
 
-  // 1. ATUALIZAR CONTADOR DE CARDS DO DIA PRIMEIRO
-  appState.stats.studiedToday++;
+  // ✅ DETECTAR SE É CARD NOVO (nunca foi revisado antes)
+  const isNewCard = !card.lastReviewed;
+  
+  if (isNewCard) {
+    console.log('🆕 Card NOVO sendo estudado pela primeira vez');
+  } else {
+    console.log('🔄 Card em REVISÃO (última revisão:', card.lastReviewed, ')');
+  }
 
-  // 2. SALVAR NO HISTÓRICO IMEDIATAMENTE
+  // 1. ATUALIZAR CONTADORES
+  appState.stats.studiedToday++;
+  
+  // ✅ Incrementar contador específico
+  if (isNewCard) {
+    appState.stats.newCardsToday++;
+    console.log('📈 Novos cards hoje:', appState.stats.newCardsToday);
+  } else {
+    appState.stats.reviewsToday++;
+    console.log('📈 Revisões hoje:', appState.stats.reviewsToday);
+  }
+
+  // 2. SALVAR NO HISTÓRICO COM DISTINÇÃO
   const wasCorrect = rating >= 3;
-  await saveStudyToHistory(wasCorrect);
+  await saveStudyToHistory(wasCorrect, isNewCard); // ✅ Passar isNewCard
 
   const originalDeck = appState.decks.find(d => d.id === appState.currentDeck.id);
   const originalCard = originalDeck.cards.find(c => c.id === card.id);
+
+  // ✅ Marcar que o card foi revisado
+  originalCard.lastReviewed = now.toISOString();
 
   originalCard.history.push({
     date: now.toISOString(),
@@ -477,9 +485,6 @@ export async function rateCard(rating) {
     // Salvar stats
     await saveStats();
     
-    // Salvar histórico diário CORRIGIDO
-    await saveDailyStudy();
-    
     console.log('✅ Dados salvos no Firebase com sucesso!');
     
     // Atualizar dashboard
@@ -496,50 +501,6 @@ export async function rateCard(rating) {
     nextCard();
   } else {
     finishStudySession();
-  }
-}
-
-// ===== SALVAR HISTÓRICO DIÁRIO - VERSÃO CORRIGIDA =====
-async function saveDailyStudy() {
-  const today = new Date().toISOString().split('T')[0];
-
-  try {
-    const userRef = doc(db, 'users', appState.user.uid);
-    const userDoc = await getDoc(userRef);
-    
-    if (!userDoc.exists()) {
-      console.error('❌ Documento do usuário não existe!');
-      return;
-    }
-
-    const userData = userDoc.data();
-    const studyHistory = userData.studyHistory || {};
-
-    // Inicializar ou atualizar entrada do dia
-    if (!studyHistory[today]) {
-      studyHistory[today] = {
-        cards: 0,
-        correct: 0,
-        wrong: 0,
-        date: today
-      };
-    }
-
-    // Atualizar contadores
-    studyHistory[today].cards = appState.stats.studiedToday;
-    studyHistory[today].correct = appState.stats.totalCorrect;
-    studyHistory[today].wrong = appState.stats.totalWrong;
-    studyHistory[today].lastUpdate = new Date().toISOString();
-
-    // Salvar no Firebase
-    await updateDoc(userRef, {
-      studyHistory: studyHistory
-    });
-
-    console.log('📊 Histórico diário ATUALIZADO:', today, studyHistory[today]);
-  } catch (err) {
-    console.error('❌ Erro ao salvar histórico diário:', err);
-    console.error('Detalhes:', err.message);
   }
 }
 

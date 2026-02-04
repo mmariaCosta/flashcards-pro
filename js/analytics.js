@@ -230,16 +230,21 @@ async function loadData(view) {
         console.log('📚 Dados do usuário carregados');
         console.log('  Histórico:', Object.keys(history).length, 'dias');
         
-        // Buscar meta de múltiplas fontes
-        if (userData.metaDiaria) {
+        // ✅ BUSCAR META DE NOVOS CARDS (prioridade: settings > metaDiaria > meta)
+        if (userData.settings && userData.settings.newCardsPerDay) {
+          userGoal = parseInt(userData.settings.newCardsPerDay) || 20;
+          console.log('  Meta de NOVOS cards (settings):', userGoal);
+        } else if (userData.metaDiaria) {
           userGoal = parseInt(userData.metaDiaria) || 20;
-          console.log('  Meta (metaDiaria):', userGoal);
+          console.log('  Meta de NOVOS cards (metaDiaria):', userGoal);
         } else if (userData.meta) {
           userGoal = parseInt(userData.meta) || 20;
-          console.log('  Meta (meta):', userGoal);
-        } else if (userData.settings && userData.settings.newCardsPerDay) {
-          userGoal = parseInt(userData.settings.newCardsPerDay) || 20;
-          console.log('  Meta (settings):', userGoal);
+          console.log('  Meta de NOVOS cards (meta):', userGoal);
+        }
+        
+        // Registrar também a meta de revisões
+        if (userData.settings && userData.settings.reviewsPerDay) {
+          console.log('  Meta de REVISÕES:', userData.settings.reviewsPerDay);
         }
         
         // Mostrar dados reais se tiver QUALQUER histórico

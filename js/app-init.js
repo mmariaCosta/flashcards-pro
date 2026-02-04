@@ -17,6 +17,8 @@ export const appState = {
   folders: [],
   stats: {
     studiedToday: 0,
+    newCardsToday: 0,    // ✅ Novos cards estudados hoje
+    reviewsToday: 0,     // ✅ Revisões feitas hoje
     totalCorrect: 0,
     totalWrong: 0,
     streak: 0,
@@ -57,19 +59,41 @@ export async function loadUserData() {
       appState.stats = appState.userData.stats || appState.stats;
       appState.settings = appState.userData.settings || appState.settings;
       
-      // CARREGAR CONTADOR DO DIA ATUAL
+      // ✅ CARREGAR CONTADORES DO DIA ATUAL (com fallback para studyHistory)
       const today = new Date().toISOString().split('T')[0];
       const studyHistory = appState.userData.studyHistory || {};
       
       if (studyHistory[today]) {
+        // Contadores do histórico
         appState.stats.studiedToday = studyHistory[today].cards || 0;
-        console.log('📊 Cards estudados hoje:', appState.stats.studiedToday);
+        appState.stats.newCardsToday = studyHistory[today].newCards || 0;
+        appState.stats.reviewsToday = studyHistory[today].reviews || 0;
+        
+        console.log('📊 Dados de hoje (do histórico):');
+        console.log('  Total estudado:', appState.stats.studiedToday);
+        console.log('  Novos cards:', appState.stats.newCardsToday);
+        console.log('  Revisões:', appState.stats.reviewsToday);
+      } else if (appState.userData.stats) {
+        // Fallback para stats diretos (se existirem)
+        appState.stats.studiedToday = appState.userData.stats.studiedToday || 0;
+        appState.stats.newCardsToday = appState.userData.stats.newCardsToday || 0;
+        appState.stats.reviewsToday = appState.userData.stats.reviewsToday || 0;
+        
+        console.log('📊 Dados de hoje (de stats):');
+        console.log('  Total estudado:', appState.stats.studiedToday);
+        console.log('  Novos cards:', appState.stats.newCardsToday);
+        console.log('  Revisões:', appState.stats.reviewsToday);
       } else {
         appState.stats.studiedToday = 0;
+        appState.stats.newCardsToday = 0;
+        appState.stats.reviewsToday = 0;
         console.log('📊 Nenhum card estudado hoje ainda');
       }
       
       console.log('✅ Dados do usuário carregados');
+      console.log('⚙️  Settings:');
+      console.log('   Meta de novos cards/dia:', appState.settings.newCardsPerDay);
+      console.log('   Meta de revisões/dia:', appState.settings.reviewsPerDay);
       
       const userNameEl = document.getElementById('userName');
       if (userNameEl) {
@@ -84,7 +108,7 @@ export async function loadUserData() {
     const decksSnapshot = await getDocs(collection(db, 'users', appState.user.uid, 'decks'));
     appState.decks = decksSnapshot.docs.map(doc => {
       const data = doc.data();
-      console.log('  ✓ Deck encontrado:', data.name);
+      console.log('  ✔ Deck encontrado:', data.name);
       return {
         id: doc.id,
         ...data
@@ -97,7 +121,7 @@ export async function loadUserData() {
     const foldersSnapshot = await getDocs(collection(db, 'users', appState.user.uid, 'folders'));
     appState.folders = foldersSnapshot.docs.map(doc => {
       const data = doc.data();
-      console.log('  ✓ Pasta encontrada:', data.name);
+      console.log('  ✔ Pasta encontrada:', data.name);
       return {
         id: doc.id,
         ...data
@@ -137,7 +161,8 @@ export async function saveSettings() {
     
     const userDocRef = doc(db, 'users', appState.user.uid);
     await updateDoc(userDocRef, {
-      settings: appState.settings
+      settings: appState.settings,
+      metaDiaria: appState.settings.newCardsPerDay // ✅ Sincronizar com metaDiaria
     });
     
     alert('✅ Configurações salvas!');
@@ -148,7 +173,7 @@ export async function saveSettings() {
 }
 
 // ===== SAVE STUDY HISTORY =====
-export async function saveStudyToHistory(correct) {
+export async function saveStudyToHistory(correct, isNewCard = false) {
   if (!appState.user) return;
 
   const today = new Date().toISOString().split('T')[0];
@@ -169,6 +194,8 @@ export async function saveStudyToHistory(correct) {
     if (!studyHistory[today]) {
       studyHistory[today] = {
         cards: 0,
+        newCards: 0,    // ✅ Contador de novos cards
+        reviews: 0,     // ✅ Contador de revisões
         correct: 0,
         wrong: 0,
         date: today
@@ -178,6 +205,15 @@ export async function saveStudyToHistory(correct) {
     // Incrementar contadores
     studyHistory[today].cards = (studyHistory[today].cards || 0) + 1;
     
+    // ✅ Diferenciar novos cards de revisões
+    if (isNewCard) {
+      studyHistory[today].newCards = (studyHistory[today].newCards || 0) + 1;
+      appState.stats.newCardsToday++;
+    } else {
+      studyHistory[today].reviews = (studyHistory[today].reviews || 0) + 1;
+      appState.stats.reviewsToday++;
+    }
+    
     if (correct) {
       studyHistory[today].correct = (studyHistory[today].correct || 0) + 1;
     } else {
@@ -186,7 +222,9 @@ export async function saveStudyToHistory(correct) {
 
     // Salvar no Firebase
     await updateDoc(userRef, {
-      studyHistory: studyHistory
+      studyHistory: studyHistory,
+      'stats.newCardsToday': appState.stats.newCardsToday,
+      'stats.reviewsToday': appState.stats.reviewsToday
     });
 
     console.log('✅ Histórico atualizado:', studyHistory[today]);
@@ -223,12 +261,16 @@ export function updateStreak() {
       // Quebrou a sequência
       console.log('  ❌ Sequência quebrada! Resetando para 0');
       appState.stats.streak = 0;
-      appState.stats.studiedToday = 0; // Reset contador diário
+      appState.stats.studiedToday = 0;
+      appState.stats.newCardsToday = 0;
+      appState.stats.reviewsToday = 0;
       saveStats();
     } else if (diffDays === 1) {
       // Ontem - mantém sequência, mas reseta contador diário
       console.log('  ✅ Último estudo foi ontem - mantém sequência');
-      appState.stats.studiedToday = 0; // Reset contador diário
+      appState.stats.studiedToday = 0;
+      appState.stats.newCardsToday = 0;
+      appState.stats.reviewsToday = 0;
       saveStats();
     }
   } else {
