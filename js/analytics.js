@@ -114,21 +114,7 @@ function renderChart(data) {
     const barClass = item.cards > userGoal ? 'above' : 
                      item.cards >= (userGoal * 0.75) ? 'average' : 'below';
     bar.className = `bar ${barClass}`;
-<<<<<<< HEAD
     bar.style.height = `${item.cards === 0 ? 0 : Math.max((item.cards / maxCards) * 100, 3)}%`;
-=======
-    
-    // ✅ CÁLCULO CORRETO DA ALTURA
-    let heightPercent;
-    if (item.cards === 0) {
-      heightPercent = 3; // Barra visível mas pequena para 0
-    } else {
-      // Altura proporcional ao valor máximo, com mínimo de 10%
-      heightPercent = Math.max((item.cards / maxCards) * 100, 10);
-    }
-    
-    bar.style.height = `${heightPercent}%`;
->>>>>>> a373267ad719219e38f3a5f5fd1b120be51df5c7
     bar.title = `${item.date}: ${item.cards} cartões`;
     
     console.log(`  ${item.day}: ${item.cards} cards → ${heightPercent.toFixed(1)}%`);
