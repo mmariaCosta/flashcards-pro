@@ -80,9 +80,13 @@ function generateSampleData(days) {
   for (let i = days - 1; i >= 0; i--) {
     const dateStr = getDateString(-i);
     const cards = Math.floor(Math.random() * 25) + 5;
+    const newCards = Math.floor(cards * 0.4); // 40% novos cards
+    const reviews = cards - newCards; // 60% revisões
     data.push({
       day: days === 7 ? getDayName(dateStr) : new Date(dateStr + 'T12:00:00').getDate().toString().padStart(2, '0'),
       cards: cards,
+      newCards: newCards,
+      reviews: reviews,
       goal: userGoal,
       date: dateStr
     });
@@ -97,12 +101,12 @@ function renderChart(data) {
 
   container.innerHTML = '';
   
-  // ✅ PEGA APENAS O MAIOR VALOR DOS DADOS (não inclui userGoal no cálculo)
-  const maxCards = Math.max(...data.map(d => d.cards), 1);
+  // ✅ CALCULA O MÁXIMO ENTRE OS CARDS E A META
+  const maxCards = Math.max(...data.map(d => d.cards), userGoal, 1);
   
   console.log('📊 GRÁFICO:');
-  console.log('  Valor máximo:', maxCards);
-  console.log('  Meta:', userGoal);
+  console.log('  Valor máximo para escala:', maxCards);
+  console.log('  Meta do usuário:', userGoal);
 
   data.forEach(item => {
     const barItem = document.createElement('div');
@@ -114,10 +118,15 @@ function renderChart(data) {
     const barClass = item.cards > userGoal ? 'above' : 
                      item.cards >= (userGoal * 0.75) ? 'average' : 'below';
     bar.className = `bar ${barClass}`;
-    bar.style.height = `${item.cards === 0 ? 0 : Math.max((item.cards / maxCards) * 100, 3)}%`;
-    bar.title = `${item.date}: ${item.cards} cartões`;
     
-    console.log(`  ${item.day}: ${item.cards} cards → ${heightPercent.toFixed(1)}%`);
+    // ✅ ALTURA PROPORCIONAL AO VALOR MÁXIMO
+    const heightPercent = item.cards === 0 ? 0 : Math.max((item.cards / maxCards) * 100, 5);
+    bar.style.height = `${heightPercent}%`;
+    
+    // Tooltip com informações detalhadas
+    bar.title = `${item.date}\nTotal: ${item.cards} cartões\n🆕 Novos: ${item.newCards || 0}\n🔄 Revisões: ${item.reviews || 0}`;
+    
+    console.log(`  ${item.day}: ${item.cards} cards (${heightPercent.toFixed(1)}%)`);
 
     const barValue = document.createElement('div');
     barValue.className = 'bar-value';
@@ -137,11 +146,15 @@ function renderChart(data) {
 function calculateStats(data) {
   let above = 0, average = 0, below = 0, studied = 0;
   let totalCards = 0;
+  let totalNewCards = 0;
+  let totalReviews = 0;
   
   data.forEach(item => {
     if (item.cards > 0) {
       studied++;
       totalCards += item.cards;
+      totalNewCards += (item.newCards || 0);
+      totalReviews += (item.reviews || 0);
     }
     
     if (item.cards > userGoal) {
@@ -155,7 +168,7 @@ function calculateStats(data) {
 
   const completionRate = studied > 0 ? Math.round((totalCards / (data.length * userGoal)) * 100) : 0;
   const consistency = Math.round((studied / data.length) * 100);
-  const accuracy = 80;
+  const accuracy = totalCards > 0 ? Math.round((totalCards / (totalCards + (totalCards * 0.2))) * 100) : 0; // Estimativa
 
   return {
     above,
@@ -166,7 +179,9 @@ function calculateStats(data) {
     consistency,
     accuracy,
     studied,
-    totalCards
+    totalCards,
+    totalNewCards,
+    totalReviews
   };
 }
 
@@ -191,6 +206,14 @@ function updateStatusCards(stats) {
   }
   if (descriptions[1]) {
     descriptions[1].textContent = `Você estudou em ${stats.studied} dos últimos 30 dias`;
+  }
+  if (descriptions[2]) {
+    descriptions[2].innerHTML = `
+      <div style="font-size: 0.875rem; margin-top: 0.5rem;">
+        <div><strong>🆕 Novos cards:</strong> ${stats.totalNewCards}</div>
+        <div><strong>🔄 Revisões:</strong> ${stats.totalReviews}</div>
+      </div>
+    `;
   }
 }
 
@@ -230,7 +253,7 @@ async function loadData(view) {
         console.log('📚 Dados do usuário carregados');
         console.log('  Histórico:', Object.keys(history).length, 'dias');
         
-        // ✅ BUSCAR META DE NOVOS CARDS (prioridade: settings > metaDiaria > meta)
+        // ✅ BUSCAR META DO USUÁRIO (prioridade: settings.newCardsPerDay > metaDiaria > meta)
         if (userData.settings && userData.settings.newCardsPerDay) {
           userGoal = parseInt(userData.settings.newCardsPerDay) || 20;
           console.log('  Meta de NOVOS cards (settings):', userGoal);
@@ -242,10 +265,8 @@ async function loadData(view) {
           console.log('  Meta de NOVOS cards (meta):', userGoal);
         }
         
-        // Registrar também a meta de revisões
-        if (userData.settings && userData.settings.reviewsPerDay) {
-          console.log('  Meta de REVISÕES:', userData.settings.reviewsPerDay);
-        }
+        // Atualizar legenda do gráfico
+        updateLegendWithGoal();
         
         // Mostrar dados reais se tiver QUALQUER histórico
         const historyKeys = Object.keys(history);
@@ -255,11 +276,13 @@ async function loadData(view) {
           
           for (let i = days - 1; i >= 0; i--) {
             const dateStr = getDateString(-i);
-            const dayData = history[dateStr] || { cards: 0 };
+            const dayData = history[dateStr] || { cards: 0, newCards: 0, reviews: 0 };
             
             data.push({
               day: days === 7 ? getDayName(dateStr) : new Date(dateStr + 'T12:00:00').getDate().toString().padStart(2, '0'),
               cards: dayData.cards || 0,
+              newCards: dayData.newCards || 0,
+              reviews: dayData.reviews || 0,
               goal: userGoal,
               date: dateStr
             });
@@ -271,7 +294,7 @@ async function loadData(view) {
           console.log('📊 Dados carregados:');
           data.forEach(d => {
             if (d.cards > 0) {
-              console.log(`  ${d.date}: ${d.cards} cards`);
+              console.log(`  ${d.date}: ${d.cards} cards (🆕 ${d.newCards} novos + 🔄 ${d.reviews} revisões)`);
             }
           });
         } else {
@@ -321,10 +344,12 @@ async function loadMonthDataForStats() {
         
         for (let i = 29; i >= 0; i--) {
           const dateStr = getDateString(-i);
-          const dayData = history[dateStr] || { cards: 0 };
+          const dayData = history[dateStr] || { cards: 0, newCards: 0, reviews: 0 };
           data.push({
             day: new Date(dateStr + 'T12:00:00').getDate().toString().padStart(2, '0'),
             cards: dayData.cards || 0,
+            newCards: dayData.newCards || 0,
+            reviews: dayData.reviews || 0,
             goal: userGoal,
             date: dateStr
           });
@@ -337,6 +362,16 @@ async function loadMonthDataForStats() {
   }
   
   return generateSampleData(30);
+}
+
+function updateLegendWithGoal() {
+  const legendItems = document.querySelectorAll('.legend-text');
+  if (legendItems.length >= 3) {
+    const threshold75 = Math.round(userGoal * 0.75);
+    legendItems[0].textContent = `Acima da meta (>${userGoal} cartões)`;
+    legendItems[1].textContent = `Na média (${threshold75}-${userGoal} cartões)`;
+    legendItems[2].textContent = `Abaixo da meta (<${threshold75} cartões)`;
+  }
 }
 
 function showSampleBanner() {

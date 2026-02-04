@@ -2,7 +2,6 @@
 import { 
   initApp, 
   setupLogout, 
-  saveSettings,
   appState
 } from './app-init.js';
 
@@ -38,6 +37,33 @@ import {
   nextCard,
   previousCard
 } from './app-study.js';
+
+// ===== FIREBASE IMPORTS (para saveSettings) =====
+import { doc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { db } from './firebase-config.js';
+
+// ===== SAVE SETTINGS (CORRIGIDO) =====
+async function saveSettings() {
+  try {
+    appState.settings.newCardsPerDay = parseInt(document.getElementById('settingNewCards')?.value) || 20;
+    appState.settings.reviewsPerDay = parseInt(document.getElementById('settingReviews')?.value) || 100;
+    
+    const userDocRef = doc(db, 'users', appState.user.uid);
+    await updateDoc(userDocRef, {
+      settings: appState.settings,
+      metaDiaria: appState.settings.newCardsPerDay // ✅ LINHA ADICIONADA - Sincroniza com metaDiaria
+    });
+    
+    alert('✅ Configurações salvas!');
+    
+    // Atualizar dashboard para refletir mudanças
+    renderDashboard();
+    
+  } catch (error) {
+    console.error('Erro ao salvar configurações:', error);
+    alert('Erro ao salvar configurações.');
+  }
+}
 
 // ===== NOTIFICATIONS =====
 async function setupNotifications() {
