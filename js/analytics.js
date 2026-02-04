@@ -128,20 +128,24 @@ function renderChart(data) {
     
     bar.className = `bar ${barClass}`;
     
-    // ✅ ALTURA PROPORCIONAL AO VALOR MÁXIMO
-    // Se não tiver cards, altura 0, senão pelo menos 5% para ficar visível
-    const heightPercent = item.cards === 0 ? 0 : Math.max((item.cards / maxCards) * 100, 8);
-    bar.style.height = `${heightPercent}%`;
-    
-    // ✅ GARANTIR QUE A BARRA SEJA VISÍVEL
+    // ✅ ALTURA PROPORCIONAL AO VALOR MÁXIMO (SEM MINHEIGHT!)
+    // Se não tiver cards, altura 0
+    // Se tiver cards, calcula proporcionalmente (mínimo 3% para ficar visível)
+    let heightPercent = 0;
     if (item.cards > 0) {
-      bar.style.minHeight = '20px';
+      heightPercent = (item.cards / maxCards) * 100;
+      // Se ficar muito pequeno (menos de 3%), seta pra 3% pra ser visível
+      if (heightPercent < 3) {
+        heightPercent = 3;
+      }
     }
+    
+    bar.style.height = `${heightPercent}%`;
     
     // Tooltip com informações detalhadas
     bar.title = `${item.date}\nTotal: ${item.cards} cartões\n🆕 Novos: ${item.newCards || 0}\n🔄 Revisões: ${item.reviews || 0}`;
     
-    console.log(`  ${item.day}: ${item.cards} cards → altura ${heightPercent.toFixed(1)}%`);
+    console.log(`  ${item.day}: ${item.cards} cards → altura ${heightPercent.toFixed(1)}% (max: ${maxCards})`);
 
     const barValue = document.createElement('div');
     barValue.className = 'bar-value';
