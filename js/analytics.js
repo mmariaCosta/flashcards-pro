@@ -97,7 +97,10 @@ function generateSampleData(days) {
 // ===== RENDERIZAÇÃO =====
 function renderChart(data) {
   const container = document.getElementById('barChart');
-  if (!container) return;
+  if (!container) {
+    console.error('❌ Container #barChart não encontrado!');
+    return;
+  }
 
   container.innerHTML = '';
   
@@ -107,6 +110,7 @@ function renderChart(data) {
   console.log('📊 GRÁFICO:');
   console.log('  Valor máximo para escala:', maxCards);
   console.log('  Meta do usuário:', userGoal);
+  console.log('  Dados:', data);
 
   data.forEach(item => {
     const barItem = document.createElement('div');
@@ -115,18 +119,29 @@ function renderChart(data) {
     const bar = document.createElement('div');
     
     // Determinar cor baseada na meta
-    const barClass = item.cards > userGoal ? 'above' : 
-                     item.cards >= (userGoal * 0.75) ? 'average' : 'below';
+    let barClass = 'below'; // default
+    if (item.cards > userGoal) {
+      barClass = 'above';
+    } else if (item.cards >= (userGoal * 0.75) && item.cards > 0) {
+      barClass = 'average';
+    }
+    
     bar.className = `bar ${barClass}`;
     
     // ✅ ALTURA PROPORCIONAL AO VALOR MÁXIMO
-    const heightPercent = item.cards === 0 ? 0 : Math.max((item.cards / maxCards) * 100, 5);
+    // Se não tiver cards, altura 0, senão pelo menos 5% para ficar visível
+    const heightPercent = item.cards === 0 ? 0 : Math.max((item.cards / maxCards) * 100, 8);
     bar.style.height = `${heightPercent}%`;
+    
+    // ✅ GARANTIR QUE A BARRA SEJA VISÍVEL
+    if (item.cards > 0) {
+      bar.style.minHeight = '20px';
+    }
     
     // Tooltip com informações detalhadas
     bar.title = `${item.date}\nTotal: ${item.cards} cartões\n🆕 Novos: ${item.newCards || 0}\n🔄 Revisões: ${item.reviews || 0}`;
     
-    console.log(`  ${item.day}: ${item.cards} cards (${heightPercent.toFixed(1)}%)`);
+    console.log(`  ${item.day}: ${item.cards} cards → altura ${heightPercent.toFixed(1)}%`);
 
     const barValue = document.createElement('div');
     barValue.className = 'bar-value';
@@ -141,6 +156,8 @@ function renderChart(data) {
     barItem.appendChild(label);
     container.appendChild(barItem);
   });
+  
+  console.log(`✅ ${data.length} barras renderizadas`);
 }
 
 function calculateStats(data) {
