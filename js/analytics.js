@@ -97,12 +97,12 @@ function renderChart(data) {
 
   container.innerHTML = '';
   
-  // ✅ PEGA APENAS O MAIOR VALOR DOS DADOS (não inclui userGoal)
-  const maxCards = Math.max(...data.map(d => d.cards), 1);
+  // ✅ CALCULA O MÁXIMO (considera dados E meta)
+  const maxCards = Math.max(...data.map(d => d.cards), userGoal, 1);
   
   console.log('📊 GRÁFICO:');
-  console.log('  Valor máximo dos dados:', maxCards);
-  console.log('  Meta configurada:', userGoal);
+  console.log('  Valor máximo:', maxCards);
+  console.log('  Meta:', userGoal);
 
   data.forEach(item => {
     const barItem = document.createElement('div');
@@ -115,19 +115,12 @@ function renderChart(data) {
                      item.cards >= (userGoal * 0.75) ? 'average' : 'below';
     bar.className = `bar ${barClass}`;
     
-    // ✅ ALTURA PROPORCIONAL AO VALOR MÁXIMO REAL
-    let heightPercent;
-    if (item.cards === 0) {
-      heightPercent = 0;
-    } else {
-      // Proporção em relação ao máximo, com mínimo de 5% para visibilidade
-      heightPercent = Math.max((item.cards / maxCards) * 100, 5);
-    }
-    
+    // ✅ ALTURA PROPORCIONAL
+    const heightPercent = item.cards === 0 ? 0 : Math.max((item.cards / maxCards) * 100, 3);
     bar.style.height = heightPercent + '%';
     bar.title = `${item.date}: ${item.cards} cartões`;
     
-    console.log(`  ${item.day}: ${item.cards} cards → altura ${heightPercent.toFixed(1)}% (max: ${maxCards})`);
+    console.log(`  ${item.day}: ${item.cards} cards → ${heightPercent.toFixed(1)}%`);
 
     const barValue = document.createElement('div');
     barValue.className = 'bar-value';
@@ -143,6 +136,7 @@ function renderChart(data) {
     container.appendChild(barItem);
   });
 }
+
 
 function calculateStats(data) {
   let above = 0, average = 0, below = 0, studied = 0;
