@@ -223,7 +223,16 @@ export function renderDashboard() {
     return deck.cards && deck.cards.some(card => isCardDue(card));
   });
 
+  // ✅ Ocultar título da seção se houver decks
+  const reviewSection = document.querySelector('.dashboard-section');
+  const reviewTitle = reviewSection?.querySelector('h2');
+  const reviewSubtitle = reviewSection?.querySelector('p');
+  
   if (dueDecks.length === 0) {
+    // Mostrar mensagem quando não há revisões
+    if (reviewTitle) reviewTitle.style.display = 'block';
+    if (reviewSubtitle) reviewSubtitle.style.display = 'block';
+    
     reviewContainer.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">🎉</div>
@@ -232,6 +241,14 @@ export function renderDashboard() {
       </div>
     `;
   } else {
+    // ✅ Ocultar título e subtítulo quando há decks
+    if (reviewTitle) reviewTitle.style.display = 'none';
+    if (reviewSubtitle) reviewSubtitle.style.display = 'none';
+    
+    // ✅ Criar grid para cards lado a lado
+    const gridContainer = document.createElement('div');
+    gridContainer.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;';
+    
     dueDecks.forEach(deck => {
       const dueCount = deck.cards.filter(card => isCardDue(card)).length;
       const card = document.createElement('div');
@@ -254,8 +271,10 @@ export function renderDashboard() {
           </div>
         </div>
       `;
-      reviewContainer.appendChild(card);
+      gridContainer.appendChild(card);
     });
+    
+    reviewContainer.appendChild(gridContainer);
   }
 }
 

@@ -172,7 +172,7 @@ body {
   border-color: var(--accent);
 }
 
-/* ===== BAR CHART ===== */
+/* ===== BAR CHART - CORRIGIDO ===== */
 .bar-chart {
   display: flex;
   align-items: flex-end;
@@ -181,6 +181,7 @@ body {
   padding: 1rem 0;
   border-bottom: 2px solid var(--border);
   gap: 0.5rem;
+  position: relative;
 }
 
 .bar-item {
@@ -189,17 +190,22 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
+  height: 100%;
+  justify-content: flex-end;
   min-width: 40px;
 }
 
 .bar {
   width: 100%;
-  min-height: 10px;
+  min-height: 5px;
   background: linear-gradient(180deg, var(--accent) 0%, #333 100%);
   border-radius: 8px 8px 0 0;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
   cursor: pointer;
   position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
 }
 
 .bar.above {
@@ -215,8 +221,9 @@ body {
 }
 
 .bar:hover {
-  opacity: 0.8;
-  transform: translateY(-2px);
+  opacity: 0.85;
+  transform: scaleY(1.02);
+  transform-origin: bottom;
 }
 
 .bar-value {
@@ -228,6 +235,7 @@ body {
   font-size: 0.875rem;
   color: var(--text-primary);
   white-space: nowrap;
+  pointer-events: none;
 }
 
 .bar-label {
@@ -235,6 +243,7 @@ body {
   color: var(--text-secondary);
   font-weight: 500;
   text-align: center;
+  margin-top: 0.5rem;
 }
 
 /* ===== LEGEND ===== */
