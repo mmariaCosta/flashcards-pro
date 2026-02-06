@@ -64,15 +64,30 @@ if (logoutBtn) {
 
 // ===== FUNÇÕES AUXILIARES =====
 function getDateString(daysAgo) {
+  // Usar timezone local
   const date = new Date();
   date.setDate(date.getDate() + daysAgo);
-  return date.toISOString().split('T')[0];
+  
+  // Formatar YYYY-MM-DD no timezone local
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const dateStr = `${year}-${month}-${day}`;
+  
+  // Debug
+  if (daysAgo === 0) {
+    console.log('📅 Data de hoje (local):', dateStr);
+  }
+  
+  return dateStr;
 }
 
 function getDayName(dateStr) {
   const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  const date = new Date(dateStr + 'T12:00:00');
-  return days[date.getDay()];
+  // Usar UTC para evitar problemas de timezone
+  const [year, month, day] = dateStr.split('-');
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return days[date.getUTCDay()];
 }
 
 function generateSampleData(days) {
@@ -80,8 +95,13 @@ function generateSampleData(days) {
   for (let i = days - 1; i >= 0; i--) {
     const dateStr = getDateString(-i);
     const cards = Math.floor(Math.random() * 25) + 5;
+    
+    // Usar UTC para dia do mês também
+    const [year, month, day] = dateStr.split('-');
+    const dayOfMonth = parseInt(day, 10).toString().padStart(2, '0');
+    
     data.push({
-      day: days === 7 ? getDayName(dateStr) : new Date(dateStr + 'T12:00:00').getDate().toString().padStart(2, '0'),
+      day: days === 7 ? getDayName(dateStr) : dayOfMonth,
       cards: cards,
       goal: userGoal,
       date: dateStr
@@ -264,8 +284,12 @@ async function loadData(view) {
             const dateStr = getDateString(-i);
             const dayData = history[dateStr] || { cards: 0 };
             
+            // Usar UTC para dia do mês
+            const [year, month, day] = dateStr.split('-');
+            const dayOfMonth = parseInt(day, 10).toString().padStart(2, '0');
+            
             data.push({
-              day: days === 7 ? getDayName(dateStr) : new Date(dateStr + 'T12:00:00').getDate().toString().padStart(2, '0'),
+              day: days === 7 ? getDayName(dateStr) : dayOfMonth,
               cards: dayData.cards || 0,
               goal: userGoal,
               date: dateStr
@@ -329,8 +353,13 @@ async function loadMonthDataForStats() {
         for (let i = 29; i >= 0; i--) {
           const dateStr = getDateString(-i);
           const dayData = history[dateStr] || { cards: 0 };
+          
+          // Usar UTC para dia do mês
+          const [year, month, day] = dateStr.split('-');
+          const dayOfMonth = parseInt(day, 10).toString().padStart(2, '0');
+          
           data.push({
-            day: new Date(dateStr + 'T12:00:00').getDate().toString().padStart(2, '0'),
+            day: dayOfMonth,
             cards: dayData.cards || 0,
             goal: userGoal,
             date: dateStr
